@@ -104,7 +104,7 @@ else()
 endif()
 
 option(SEPARATE_CONFIGURATIONS "Clearer separation between configurations" OFF)
-SET(CMAKE_INSTALL_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/install)
+SET(CMAKE_INSTALL_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../../install/${PROJECT_NAME})
 SET(CMAKE_INSTALL_PREFIX ${CMAKE_INSTALL_ROOT})
 
 if(DEFINED CMAKE_BUILD_TYPE) ## for mono config type (make/nmake/ninja based)

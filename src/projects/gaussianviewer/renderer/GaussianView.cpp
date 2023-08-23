@@ -84,20 +84,28 @@ int loadPly(const char* filename,
 	// "Parse" header (it has to be a specific format anyway)
 	std::string buff;
 	std::getline(infile, buff);
+	SIBR_LOG << "<Header>" << std::endl;
+	SIBR_LOG << "\t" << buff << std::endl;
 	std::getline(infile, buff);
+	SIBR_LOG << "\t" << buff << std::endl;
 
 	std::string dummy;
 	std::getline(infile, buff);
 	std::stringstream ss(buff);
 	int count;
+	SIBR_LOG << "\t" << buff << std::endl;
 	ss >> dummy >> dummy >> count;
 
 	// Output number of Gaussians contained
-	SIBR_LOG << "Loading " << count << " Gaussian splats" << std::endl;
+	// SIBR_LOG << "Loading " << count << " Gaussian splats" << std::endl;
 
 	while (std::getline(infile, buff))
-		if (buff.compare("end_header") == 0)
+		if (buff.compare("end_header") == 0) {
+			SIBR_LOG << "</Header>" << std::endl;
 			break;
+		} else {
+			SIBR_LOG << "\t" << buff << std::endl;
+		}
 
 	// Read all Gaussians at once (AoS)
 	std::vector<RichPoint<D>> points(count);
@@ -165,6 +173,7 @@ int loadPly(const char* filename,
 		// Activate alpha
 		opacities[k] = sigmoid(points[i].opacity);
 
+		// Spherical Harmonics
 		shs[k].shs[0] = points[i].shs.shs[0];
 		shs[k].shs[1] = points[i].shs.shs[1];
 		shs[k].shs[2] = points[i].shs.shs[2];
@@ -324,6 +333,7 @@ sibr::GaussianView::GaussianView(const sibr::BasicIBRScene::Ptr & ibrScene, uint
 	int num_devices;
 	CUDA_SAFE_CALL_ALWAYS(cudaGetDeviceCount(&num_devices));
 	_device = device;
+	SIBR_LOG << "There are " << num_devices << " CUDA devices detected." << std::endl;
 	if (device >= num_devices)
 	{
 		if (num_devices == 0)
@@ -360,6 +370,7 @@ sibr::GaussianView::GaussianView(const sibr::BasicIBRScene::Ptr & ibrScene, uint
 	std::vector<Scale> scale;
 	std::vector<float> opacity;
 	std::vector<SHs<3>> shs;
+	SIBR_LOG << "sh_degree: " << sh_degree << std::endl;
 	if (sh_degree == 1)
 	{
 		count = loadPly<1>(file, pos, shs, opacity, scale, rot, _scenemin, _scenemax);
@@ -375,6 +386,9 @@ sibr::GaussianView::GaussianView(const sibr::BasicIBRScene::Ptr & ibrScene, uint
 
 	_boxmin = _scenemin;
 	_boxmax = _scenemax;
+
+	SIBR_LOG << "Box Max: " << _boxmax << std::endl;
+	SIBR_LOG << "Box Min: " << _boxmin << std::endl;
 
 	int P = count;
 
