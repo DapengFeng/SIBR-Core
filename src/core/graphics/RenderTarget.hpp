@@ -312,7 +312,7 @@ namespace sibr
 		m_W = w;
 		m_H = h;
 
-		bool is_depth = (GLFormat<typename PixelFormat::Type, PixelFormat::NumComp>::isdepth != 0);
+		bool is_depth = (GLFormat<typename PixelImage::Type, PixelImage::NumComp>::isdepth != 0);
 
 		int maxRenterTargets = 0;
 		glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS, &maxRenterTargets);
@@ -321,7 +321,7 @@ namespace sibr
 		SIBR_ASSERT(!is_depth || num == 1);
 
 		if (flags & SIBR_GPU_INTEGER) {
-			if (GLFormat<typename PixelFormat::Type, PixelFormat::NumComp>::int_internal_format < 0) {
+			if (GLFormat<typename PixelImage::Type, PixelImage::NumComp>::int_internal_format < 0) {
 				throw std::runtime_error("Integer render  - format does not support integer mapping");
 			}
 		}
@@ -360,14 +360,14 @@ namespace sibr
 			glTexImage2D(GL_TEXTURE_2D,
 				0,
 				(flags & SIBR_GPU_INTEGER)
-				? GLFormat<typename PixelFormat::Type, PixelFormat::NumComp>::int_internal_format
-				: GLFormat<typename PixelFormat::Type, PixelFormat::NumComp>::internal_format,
+				? GLFormat<typename PixelImage::Type, PixelImage::NumComp>::int_internal_format
+				: GLFormat<typename PixelImage::Type, PixelImage::NumComp>::internal_format,
 				w, h,
 				0,
 				(flags & SIBR_GPU_INTEGER)
-				? GLFormat<typename PixelFormat::Type, PixelFormat::NumComp>::int_format
-				: GLFormat<typename PixelFormat::Type, PixelFormat::NumComp>::format,
-				GLType<typename PixelFormat::Type>::type,
+				? GLFormat<typename PixelImage::Type, PixelImage::NumComp>::int_format
+				: GLFormat<typename PixelImage::Type, PixelImage::NumComp>::format,
+				GLType<typename PixelImage::Type>::type,
 				NULL);
 
 
@@ -435,8 +435,8 @@ namespace sibr
 			glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE,
 				msaa_samples,
 				(flags & SIBR_GPU_INTEGER)
-				? GLFormat<typename PixelFormat::Type, PixelFormat::NumComp>::int_internal_format
-				: GLFormat<typename PixelFormat::Type, PixelFormat::NumComp>::internal_format,
+				? GLFormat<typename PixelImage::Type, PixelImage::NumComp>::int_internal_format
+				: GLFormat<typename PixelImage::Type, PixelImage::NumComp>::internal_format,
 				w, h,
 				GL_TRUE
 			);
@@ -498,7 +498,7 @@ namespace sibr
 	template<typename T_Type, unsigned int T_NumComp>
 	void RenderTarget<T_Type, T_NumComp>::bind(void) {
 		glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);
-		bool is_depth = (GLFormat<typename PixelFormat::Type, PixelFormat::NumComp>::isdepth != 0);
+		bool is_depth = (GLFormat<typename PixelImage::Type, PixelImage::NumComp>::isdepth != 0);
 		if (!is_depth) {
 			if (m_numtargets > 0) {
 				GLenum drawbuffers[SIBR_MAX_SHADER_ATTACHMENTS];
@@ -531,13 +531,13 @@ namespace sibr
 	template<typename T_Type, unsigned int T_NumComp>
 	void RenderTarget<T_Type, T_NumComp>::clear(const typename RenderTarget<T_Type, T_NumComp>::PixelFormat& v) {
 		bind();
-		if (PixelFormat::NumComp == 1) {
+		if (PixelImage::NumComp == 1) {
 			glClearColor(GLclampf(v[0]), 0, 0, 0);
-		} else if (PixelFormat::NumComp == 2) {
+		} else if (PixelImage::NumComp == 2) {
 			glClearColor(GLclampf(v[0]), GLclampf(v[1]), 0, 0);
-		} else if (PixelFormat::NumComp == 3) {
+		} else if (PixelImage::NumComp == 3) {
 			glClearColor(GLclampf(v[0]), GLclampf(v[1]), GLclampf(v[2]), 0);
-		} else if (PixelFormat::NumComp == 4) {
+		} else if (PixelImage::NumComp == 4) {
 			glClearColor(GLclampf(v[0]), GLclampf(v[1]), GLclampf(v[2]), GLclampf(v[3]));
 		}
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -568,7 +568,7 @@ namespace sibr
 			SIBR_ERR << "Reading back texture out of bounds" << std::endl;
 
 		glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);
-		bool is_depth = (GLFormat<typename PixelFormat::Type, PixelFormat::NumComp>::isdepth != 0);
+		bool is_depth = (GLFormat<typename PixelImage::Type, PixelImage::NumComp>::isdepth != 0);
 		if (!is_depth) {
 			if (m_numtargets > 0) {
 				sibr::Image<T_Type, T_NumComp> buffer(m_W, m_H);
@@ -578,8 +578,8 @@ namespace sibr
 				glReadBuffer(drawbuffers);
 
 				glReadPixels(0, 0, m_W, m_H,
-					GLFormat<typename PixelFormat::Type, PixelFormat::NumComp>::format,
-					GLType<typename PixelFormat::Type>::type,
+					GLFormat<typename PixelImage::Type, PixelImage::NumComp>::format,
+					GLType<typename PixelImage::Type>::type,
 					buffer.data()
 				);
 

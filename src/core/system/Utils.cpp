@@ -345,6 +345,10 @@ namespace sibr
 		std::string installDirectory(parentDirectory(path));
 #endif
 
+    if (installDirectory.find("/bin") != std::string::npos) {
+			installDirectory = parentDirectory(installDirectory);
+		}
+
 		if (len == 0 && 
 		!directoryExists(installDirectory + "/bin")) // memory not sufficient or general error occured
 		{

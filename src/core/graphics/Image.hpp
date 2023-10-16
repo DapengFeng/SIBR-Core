@@ -245,7 +245,7 @@ namespace sibr
 		typedef ImagePtr<T_Type, T_NumComp> Ptr;
 
 		typedef Eigen::Matrix<T_Type, T_NumComp, 1, Eigen::DontAlign> Pixel;
-		enum { e_NumComp = T_NumComp };
+		enum { NumComp = T_NumComp };
 
 	public:
 

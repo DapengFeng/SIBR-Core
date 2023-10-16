@@ -27,7 +27,7 @@ namespace sibr
 
 	static void glfwErrorCallback(int error, const char* description)
 	{
-		SIBR_ERR << description << std::endl;
+		SIBR_ERR << "Error Code: [" << error << "] " << description << std::endl;
 	}
 
 	static void glErrorCallback(GLenum src, GLenum type, GLuint id, GLenum severity, GLsizei size, const GLchar* str, const void* user) {
