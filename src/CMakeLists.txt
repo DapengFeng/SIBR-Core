@@ -75,7 +75,7 @@ if (BUILD_SIBR)
   add_subdirectory(core)
 endif()
 
-set(PROJECTS_ON_AT_FIRST_BUILD "basic" "gaussianviewer" "remote")
+set(PROJECTS_ON_AT_FIRST_BUILD "basic" "gaussianviewer" "remote" "semanticviewer")
 
 foreach(subdir ${SUBDIRS})
   message(STATUS "Adding ${subdir} project")

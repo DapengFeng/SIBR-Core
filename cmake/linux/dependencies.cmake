@@ -322,3 +322,6 @@ sibr_gitlibrary(TARGET xatlas
 )
 
 Win3rdPartyGlobalCacheAction()
+
+# find tinyPLY
+find_package(tinyply REQUIRED)
