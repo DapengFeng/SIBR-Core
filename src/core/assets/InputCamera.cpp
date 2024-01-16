@@ -1379,6 +1379,7 @@ namespace sibr
 			0, -1, 0,
 			0, 0, -1;
 
+		int camID = 0;
   		const size_t num_reg_images = ReadBinaryLittleEndian<uint64_t>(&imagesFile);
 		for (size_t i = 0; i < num_reg_images; ++i) {
 
@@ -1412,10 +1413,10 @@ namespace sibr
 
 			sibr::InputCamera::Ptr camera;
 			if (fovXfovYFlag) {
-				camera = std::make_shared<InputCamera>(InputCamera(camParams.fy, camParams.fx, 0.0f, 0.0f, int(camParams.width), int(camParams.height), int(cId)));
+				camera = std::make_shared<InputCamera>(InputCamera(camParams.fy, camParams.fx, 0.0f, 0.0f, int(camParams.width), int(camParams.height), int(camID)));
 			}
 			else {
-				camera = std::make_shared<InputCamera>(InputCamera(camParams.fy, 0.0f, 0.0f, int(camParams.width), int(camParams.height), int(cId)));
+				camera = std::make_shared<InputCamera>(InputCamera(camParams.fy, 0.0f, 0.0f, int(camParams.width), int(camParams.height), int(camID)));
 			}
 			std::string image_name;
 			char name_char;
@@ -1442,6 +1443,7 @@ namespace sibr
 			      const double y = ReadBinaryLittleEndian<double>(&imagesFile);
 				  point3D_t id = ReadBinaryLittleEndian<point3D_t>(&imagesFile);
     			}
+				camID++;
 		}
 		return cameras;
 	}
