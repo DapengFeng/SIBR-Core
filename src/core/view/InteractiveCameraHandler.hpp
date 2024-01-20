@@ -84,7 +84,7 @@ namespace sibr {
 		\param raycaster raycaster containing the mesh displayed (used for the trackball centering), can be nullptr
 		\param clippingPlanes optional clipping planes to enforce
 		*/
-		void setup(const std::vector<InputCamera::Ptr>& cams, const sibr::Viewport& viewport, std::shared_ptr<sibr::Raycaster> raycaster, const sibr::Vector2f & clippingPlanes = {-1.0f,-1.0f});
+		void setup(const std::vector<InputCamera::Ptr>& cams, const sibr::Viewport& viewport, std::shared_ptr<sibr::Raycaster> raycaster, const sibr::Vector2f & clippingPlanes = {-1.0f,-1.0f}, std::string snaplabel = "top");
 
 		/** Setup an interactive camera handler from a mesh.
 		The interactive camera will be initialized so that the mesh is completely visible.
@@ -97,7 +97,7 @@ namespace sibr {
 		/** Setup a camera path for the interpolation mode. 
 		 * \param cameras to interpolate along
 		 */
-		void setupInterpolationPath(const std::vector<InputCamera::Ptr> & cameras);
+		void setupInterpolationPath(const std::vector<InputCamera::Ptr> & cameras, std::string snaplabel = "top");
 
 		/** Move the interactive camera to a new position and change its internal parameters.
 		\param cam the cameras the parameters and pose should be copied from
@@ -210,6 +210,7 @@ namespace sibr {
 
 		bool _shouldSmooth; ///< Motion smoothing.
 		bool _shouldSnap; ///< Currently snapping.
+		bool _snapTop; ///< Snap to Top cameras only.
 
 		sibr::FPSCamera _fpsCamera; ///< FPS handler.
 		sibr::Orbit _orbit; ///< Orbit handler.
@@ -229,6 +230,7 @@ namespace sibr {
 		uint _startCam; ///< Start camera index in the list.
 		uint _interpFactor; ///< Current interpolation factor between cam _startCam and _startCam+1.
 		std::vector<InputCamera::Ptr> _interpPath; ///< Cameras along the path.
+		std::vector<InputCamera::Ptr> _interpPathTop; ///< Front Cameras along the path.
 
 		sibr::CameraRecorder _cameraRecorder; ///< Camera recorder.
 		bool _supportRecording; ///< Does the camera support recording (uneeded).

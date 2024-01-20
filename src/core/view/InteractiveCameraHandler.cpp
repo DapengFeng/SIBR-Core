@@ -97,11 +97,11 @@ namespace sibr {
 		fromCamera(_trackball.getCamera(), false);
 	}
 
-	void InteractiveCameraHandler::setup(const std::vector<InputCamera::Ptr>& cams, const sibr::Viewport & viewport, const std::shared_ptr<sibr::Raycaster> raycaster, const sibr::Vector2f & clippingPlanes) {
+	void InteractiveCameraHandler::setup(const std::vector<InputCamera::Ptr>& cams, const sibr::Viewport & viewport, const std::shared_ptr<sibr::Raycaster> raycaster, const sibr::Vector2f & clippingPlanes, std::string snaplabel) {
 
 		// setup interpolation path if not set
 		if (_interpPath.empty()) {
-			setupInterpolationPath(cams);
+			setupInterpolationPath(cams, snaplabel);
 		}
 		// Update the near and far planes.
 		sibr::InputCamera idealCam = *cams[0];
@@ -258,7 +258,7 @@ namespace sibr {
 		return selectedCam;
 	}
 
-	void InteractiveCameraHandler::setupInterpolationPath(const std::vector<InputCamera::Ptr> & cameras) {
+	void InteractiveCameraHandler::setupInterpolationPath(const std::vector<InputCamera::Ptr> & cameras, std::string snaplabel) {
 		_interpPath.resize(cameras.size());
 
 		bool defaultPath = false;
@@ -286,6 +286,11 @@ namespace sibr {
 				return a->id() < b->id();
 			});
 		}
+
+		std::copy_if(cameras.begin(), cameras.end(), back_inserter(_interpPathTop), [&](InputCamera::Ptr cam) {
+			const size_t found = cam->name().find(snaplabel);
+			return found != std::string::npos;
+		});
 	}
 
 	void InteractiveCameraHandler::interpolate() {
@@ -319,10 +324,19 @@ namespace sibr {
 	}
 
 	void InteractiveCameraHandler::snapToCamera(const int i) {
-		if (!_interpPath.empty()) {
-			unsigned int nearestCam = (i == -1 ? findNearestCamera(_interpPath) : i);
-			nearestCam = sibr::clamp(nearestCam, unsigned int(0), unsigned int(_interpPath.size() - 1));
-			fromCamera(*_interpPath[nearestCam], true, false);
+		if (_snapTop) {
+			if (!_interpPathTop.empty()) {
+				unsigned int nearestCam = (i == -1 ? findNearestCamera(_interpPathTop) : i);
+				nearestCam = sibr::clamp(nearestCam, (unsigned int)(0), (unsigned int)(_interpPathTop.size() - 1));
+				fromCamera(*_interpPathTop[nearestCam], true, false);
+			}
+		}
+		else {
+			if (!_interpPath.empty()) {
+				unsigned int nearestCam = (i == -1 ? findNearestCamera(_interpPath) : i);
+				nearestCam = sibr::clamp(nearestCam, (unsigned int)(0), (unsigned int)(_interpPath.size() - 1));
+				fromCamera(*_interpPath[nearestCam], true, false);
+			}
 		}
 	}
 
@@ -470,6 +484,15 @@ namespace sibr {
 				break;
 			case FPS:
 			default:
+				if (_snapTop) {
+					auto id = findNearestCamera(_interpPathTop);
+					sibr::InputCamera::Ptr nearestCam = _interpPathTop[id];
+					_fpsCamera.setGoalAltitude(nearestCam->position().z());
+				}
+				else {
+					_fpsCamera.setGoalAltitude(-1.f);
+				}
+
 				_fpsCamera.update(input, deltaTime);
 				if (_shouldSnap) {
 					_fpsCamera.snap(_interpPath);
@@ -544,12 +567,28 @@ namespace sibr {
 
 			ImGui::Separator();
 			if (ImGui::Button("Snap to closest")) {
-				_currentCamId = findNearestCamera(_interpPath);
+				if (_snapTop) {
+					_currentCamId = findNearestCamera(_interpPathTop);
+				}
+				else {
+					_currentCamId = findNearestCamera(_interpPath);
+				}
 				snapToCamera(_currentCamId);
 			}
+
+			ImGui::SameLine();
+			ImGui::Checkbox("Snap to top", &_snapTop);
+
 			ImGui::SameLine();
 			if (ImGui::InputInt("Snap to", &_currentCamId, 1, 10)) {
-				_currentCamId = sibr::clamp(_currentCamId, 0, int(_interpPath.size()) - 1);
+				if (_snapTop) {
+
+					_currentCamId = sibr::clamp(_currentCamId, 0, int(_interpPathTop.size()) - 1);
+					//_currentCamId = -1;
+				}
+				else {
+					_currentCamId = sibr::clamp(_currentCamId, 0, int(_interpPath.size()) - 1);
+				}
 				snapToCamera(_currentCamId);
 			}
 
