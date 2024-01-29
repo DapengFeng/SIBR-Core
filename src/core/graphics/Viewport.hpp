@@ -90,6 +90,8 @@ namespace sibr
 		/** \return the absolute viewport height. */
 		float	finalHeight( void ) const;
 
+		void	setBottom(const float&);
+
 		/** \return the absolute viewport size. */
 		sibr::Vector2f finalSize() const;
 		/** \return the absolute cooridnates of the top left corner. */
@@ -193,6 +195,11 @@ namespace sibr
 		return (_parent)? _parent->finalHeight()*height() : height();
 	}
 
+	inline void Viewport::setBottom(const float& value)
+	{
+		_bottom = value;
+	}
+
 	inline sibr::Vector2f	Viewport::finalSize(void) const {
 		return sibr::Vector2f(finalWidth(),finalHeight());
 	}
@@ -200,6 +207,5 @@ namespace sibr
 	inline Vector2f Viewport::finalTopLeft() const {
 		return { finalLeft(), finalTop() };
 	}
-
 
 } // namespace sibr

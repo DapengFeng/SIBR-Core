@@ -24,6 +24,7 @@
 # include "core/view/ViewBase.hpp"
 # include "core/scene/BasicIBRScene.hpp"
 # include "core/system/CommandLineArgs.hpp"
+# include <core/renderer/PointBasedRenderer.hpp>
 
 #include <core/view/MultiMeshManager.hpp>
 
@@ -36,7 +37,7 @@ namespace sibr
 		\param zfar far value to use for the frustum (if < 0, cam.far() will be used)
 		 \ingroup sibr_view
 		*/
-	Mesh::Ptr SIBR_VIEW_EXPORT generateCamFrustum(const InputCamera & cam, float znear = -1, float zfar = -1);
+	Mesh::Ptr SIBR_VIEW_EXPORT generateCamFrustum(const InputCamera & cam, float znear = -1, float zfar = -1, bool useCam = true);
 
 	/** Generate an accurate camera frustum with a custom color.
 		\param cam camera to visualize as a stub
@@ -144,7 +145,10 @@ namespace sibr
 		GLuniform<float>			_alphaArray = 1.0f; ///< Opacity.
 		GLuniform<int>				_sliceArray = 1; ///< Slice location (for the texture array case).
 		float						_alphaImage = 0.5f; ///< Opacity shared value.
-		float						_cameraScaling = 0.8f; ///< Camera scaling.
+
+		float						_userCameraScaling = 3.f; ///< Camera scaling.
+		float						_pathScaling = 1.0f; ///< Camera scaling.
+		float						_lastPathScaling = 1.0f; ///< Camera scaling.
 	};
 
 	/** Scene viewer for IBR scenes with a proxy, cameras and input images. 
@@ -255,6 +259,11 @@ namespace sibr
 		int								_cameraIdInfoGUI = 0; ///< ID of the camera to display info about.
 		bool							_showImages = true; ///< Show the image planes.
 		bool							_showLabels = false; ///< Show camera labels.
+		int								_renderingCam; ///< ID of the camera used for rendering
+
+		Mesh::Ptr used_cams = std::make_shared<Mesh>();
+		Mesh::Ptr non_used_cams = std::make_shared<Mesh>();
+		Mesh::Ptr user_cam = std::make_shared<Mesh>();
 
 	};
 

@@ -25,6 +25,11 @@ namespace sibr {
 		_paramUserColor.init(_shader,"user_color");
 	}
 
+	void PointBasedRenderer::meshToDevice(const Mesh& mesh)
+	{
+		mesh.forceBufferGLUpdate();
+	}
+
 	void	PointBasedRenderer::process(const Mesh& mesh, const Camera& eye, IRenderTarget& dst, bool backfaceCull)
 	{
 		glEnable(GL_PROGRAM_POINT_SIZE);

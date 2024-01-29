@@ -1418,7 +1418,7 @@ namespace sibr
 			_renderingOptions.adjacency = adjacency;
 			_gl.dirtyBufferGL = true;
 		}
-		
+		glLineWidth(3);
 		_renderingOptions.depthTest = depthTest;
 		_renderingOptions.backFaceCulling = backFaceCulling;
 		_renderingOptions.mode = mode;
@@ -1544,9 +1544,11 @@ namespace sibr
 	}
 
 
-	void	Mesh::render_points(void) const
+	void	Mesh::render_points() const
 	{
-		forceBufferGLUpdate();
+		//if(forceUpdate)
+		//	forceBufferGLUpdate();
+
 		glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
 		_gl.bufferGL->draw_points();
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);

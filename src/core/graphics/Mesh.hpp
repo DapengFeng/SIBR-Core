@@ -339,7 +339,7 @@ namespace sibr
 		/** Render the mesh vertices as points.
 		\note The depth test state will be whatever it is currently set to.
 		*/
-		void	render_points(void) const;
+		void	render_points() const;
 
 		/** Render the mesh vertices as successive lines.
 		\note The depth test state will be whatever it is currently set to.

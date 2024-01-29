@@ -80,9 +80,16 @@ namespace sibr
 
 	void	CameraRecorder::playback(void)
 	{
-		stop();
+		//stop();
 		_playing = true;
+		_paused = false;
 		SIBR_LOG << "[CameraRecorder] - Playing" << std::endl;
+	}
+
+	void CameraRecorder::pause(void)
+	{
+		_playing = false;
+		_paused = true;
 	}
 
 	void	CameraRecorder::record(void)
@@ -112,7 +119,7 @@ namespace sibr
 
 	void	CameraRecorder::stop(void)
 	{
-		_recording = _playing = false;
+		_recording = _playing = _paused = false;
 		_pos = 0;
 		_interp = 0.0f;
 	}
@@ -510,6 +517,11 @@ namespace sibr
 		outImage->save(outFileName, false);
 		std::cout << std::endl;
 		std::cout << "Done saving image. " << std::endl;
+	}
+
+	sibr::Camera CameraRecorder::getCurrentCam()
+	{
+		return _cameras[_pos];
 	}
 
 } // namespace sibr

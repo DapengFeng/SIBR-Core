@@ -21,7 +21,7 @@
 namespace sibr
 {
 
-	Mesh::Ptr generateCamFrustum(const InputCamera & cam, float near, float far)
+	Mesh::Ptr generateCamFrustum(const InputCamera & cam, float near, float far, bool useCam)
 	{
 		static const Mesh::Triangles tris = {
 			{0,0,1},{1,1,2},{2,2,3},{3,3,0},
@@ -30,22 +30,40 @@ namespace sibr
 		};
 
 		std::vector<Vector3f> dirs;
-		for (const auto & c : cam.getImageCorners()) {
-			dirs.push_back(CameraRaycaster::computeRayDir(cam, c.cast<float>() + 0.5f*Vector2f(1, 1)));
+		if (!useCam) {
+			dirs.resize(4);
+			dirs[0] = Vector3f(-1, -0.8, -1);
+			dirs[1] = Vector3f(1, -0.8, -1);
+			dirs[2] = Vector3f(1, 0.8, -1);
+			dirs[3] = Vector3f(-1, 0.8, -1);
 		}
+		else {
+			for (const auto & c : cam.getImageCorners()) {
+				dirs.push_back(CameraRaycaster::computeRayDir(cam, c.cast<float>() + 0.5f*Vector2f(1, 1)));
+			}
+		}
+
 		float znear = (near >= 0 ? near : cam.znear());
 		float zfar = (far >= 0 ? far : cam.zfar());
 		Mesh::Vertices vertices;
 		for (int k = 0; k < 2; k++) {
 			float dist = (k == 0 ? znear : zfar);
 			for (const auto & d : dirs) {
-				vertices.push_back(cam.position() + dist * d);
+				if (useCam) {
+					vertices.push_back(cam.position() + dist * d);
+
+				}
+				else {
+
+					vertices.push_back(dist * d);
+				}
 			}
 		}
 
 		auto out = std::make_shared<Mesh>();
 		out->vertices(vertices);
 		out->triangles(tris);
+
 		return out;
 	}
 
@@ -164,7 +182,7 @@ namespace sibr
 	void ImageCamViewer::renderImage(const Camera & eye, const InputCamera & cam,
 		const std::vector<RenderTargetRGBA32F::Ptr> & rts, int cam_id)
 	{
-		const auto quad = generateCamQuadWithUvs(cam, _cameraScaling);
+		const auto quad = generateCamQuadWithUvs(cam, _pathScaling);
 		if (cam_id < rts.size() && rts[cam_id]) {
 			_shader2D.begin();
 			_mvp2D.set(eye.viewproj());
@@ -178,7 +196,7 @@ namespace sibr
 
 	void ImageCamViewer::renderImage(const Camera & eye, const InputCamera & cam, uint tex2Darray_handle, int cam_id)
 	{
-		const auto quad = generateCamQuadWithUvs(cam, _cameraScaling);
+		const auto quad = generateCamQuadWithUvs(cam, _pathScaling);
 		_shaderArray.begin();
 		_mvpArray.set(eye.viewproj());
 		_alphaArray.set(_alphaImage);
@@ -203,7 +221,7 @@ namespace sibr
 			camera_handler.setupInterpolationPath(_scene->cameras()->inputCameras());
 		}
 
-		_showImages = true;
+		_showImages = false;
 
 		const std::string camerasDir = myArgs.dataset_path.get() + "/cameras";
 		if (directoryExists(camerasDir)) {
@@ -230,7 +248,7 @@ namespace sibr
 
 		//Camera stub size
 		if (input.key().isActivated(Key::LeftControl) && input.mouseScroll() != 0.0) {
-			_cameraScaling = std::max(0.001f, _cameraScaling + (float)input.mouseScroll()*0.1f);
+			_userCameraScaling = std::max(0.001f, _userCameraScaling + (float)input.mouseScroll()*0.1f);
 		}
 		if (input.key().isActivated(Key::LeftControl) && input.key().isReleased(Key::P)) {
 			MeshData & guizmo = getMeshData("guizmo");
@@ -238,9 +256,10 @@ namespace sibr
 		}
 
 		MeshData & proxy = getMeshData("proxy");
-		if( proxy.meshPtr->triangles().size() == 0 )
+		if (proxy.meshPtr->triangles().size() == 0) {
 			// SfM Points only
 			proxy.renderMode = Mesh::RenderMode::PointRenderMode;
+		}
 
 		if (input.key().isActivated(Key::LeftControl) && input.key().isReleased(Key::Z)) {
 			//MeshData & proxy = getMeshData("proxy");
@@ -249,6 +268,25 @@ namespace sibr
 			} else {
 				proxy.renderMode = Mesh::RenderMode::FillRenderMode;
 			}
+		}
+
+		//user camera transform update
+		sibr::Transform3f scaled = _userCurrentCam->getCamera().transform();
+		scaled.scale(_userCameraScaling);
+		getMeshData("scene cam").setTransformation(scaled.matrix());
+
+
+		// update input camera (path) scales
+		if (_pathScaling != _lastPathScaling) {
+			removeMesh("used cams");
+			used_cams.reset();
+			used_cams = std::make_shared<Mesh>();
+			for (const auto& camInfos : _cameras) {
+				if (!camInfos.cam.isActive()) { continue; }
+				(camInfos.highlight ? used_cams : non_used_cams)->merge(*generateCamFrustum(camInfos.cam, 0.0f, _pathScaling));
+			}
+			_lastPathScaling = _pathScaling;
+			addMeshAsLines("used cams", used_cams).setColor({ 0,1,0 });
 		}
 
 		if (input.key().isReleased(Key::T)) {
@@ -280,28 +318,10 @@ namespace sibr
 		viewport.clear(backgroundColor);
 		viewport.bind();
 
-		addMeshAsLines("scene cam", generateCamFrustum(_userCurrentCam->getCamera(), 0.0f, _cameraScaling)).setColor({ 1,0,0 });
-
-		if (_scene) {
-			for (int i = 0; i < (int)_scene->cameras()->inputCameras().size(); ++i) {
-				_cameras[i].highlight =  _scene->cameras()->isCameraUsedForRendering(_scene->cameras()->inputCameras()[i]->id());
-			}
-		}	
-
-		auto used_cams = std::make_shared<Mesh>(), non_used_cams = std::make_shared<Mesh>();
-		for (const auto & camInfos : _cameras) {
-			if (!camInfos.cam.isActive()) { continue; }
-			(camInfos.highlight ? used_cams : non_used_cams)->merge(*generateCamFrustum(camInfos.cam, 0.0f, _cameraScaling));
-		}
-
-		addMeshAsLines("used cams", used_cams).setColor({ 0,1,0 });
-		addMeshAsLines("non used cams", non_used_cams).setColor({ 0,0,1 });
-
 		renderMeshes();
 
 		if (_scene && _showImages) {
-			glEnable(GL_BLEND);
-			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 			int cam_id = 0;
 			for (const auto & camInfos : _cameras) {
 				if (camInfos.cam.isActive()) {
@@ -314,7 +334,6 @@ namespace sibr
 				}
 				++cam_id;
 			}
-			glDisable(GL_BLEND);
 		}
 
 		if (_showLabels) {
@@ -379,8 +398,10 @@ namespace sibr
 			}
 
 			ImGui::PushScaledItemWidth(120);
-			ImGui::InputFloat("Camera scale", &_cameraScaling, 0.1f, 10.0f);
-			_cameraScaling = std::max(0.001f, _cameraScaling);
+			ImGui::InputFloat("Input cameras scale", &_pathScaling, 0.1f, 10.0f);
+			ImGui::InputFloat("User camera scale", &_userCameraScaling, 0.1f, 10.0f);
+			_pathScaling = std::max(0.001f, _pathScaling);
+			_userCameraScaling = std::max(0.001f, _userCameraScaling);
 
 			ImGui::Checkbox("Draw labels ", &_showLabels);
 			if (_showLabels) {
@@ -476,14 +497,33 @@ namespace sibr
 
 	void SceneDebugView::setup()
 	{
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glBlendEquation(GL_FUNC_ADD);
+
 		if (_scene) {
 			setupLabelsManagerMeshes(_scene->cameras()->inputCameras());
 			setupMeshes();
 
+			user_cam = generateCamFrustum(_userCurrentCam->getCamera(), 0.0f, _userCameraScaling, false);
+
 			_cameras.clear();
 			for (const auto & inputCam : _scene->cameras()->inputCameras()) {
-				_cameras.push_back(CameraInfos(*inputCam, inputCam->id(), _scene->cameras()->isCameraUsedForRendering(inputCam->id())));
+				const bool isUsed = _scene->cameras()->isCameraUsedForRendering(inputCam->id());
+				_cameras.push_back(CameraInfos(*inputCam, inputCam->id(), isUsed));
+
+				if (inputCam->isActive()) { 
+					(isUsed ? used_cams : non_used_cams)->merge(*generateCamFrustum(*inputCam, 0.0f, _pathScaling));
+				}
+				//// store id of the camera used to render the scene
+				//if (_scene->cameras()->isCameraUsedForRendering(inputCam->id())) {
+
+				//}
 			}
+
+			addMeshAsLines("scene cam", user_cam).setColor({ 1,0,0 });
+			addMeshAsLines("used cams", used_cams).setColor({ 0,1,0 });
+			addMeshAsLines("non used cams", non_used_cams).setColor({ 0,0,1 });
 		}
 
 		_snapToImage = 0;

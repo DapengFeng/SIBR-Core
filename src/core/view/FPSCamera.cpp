@@ -173,11 +173,11 @@ namespace sibr {
 		// if camera is snapped to a top camera: try to keep the same altitude
 		if (_goalAltitude != -1) {
 			sibr::Vector3f worldUp(0., 0., 1.);
-
 			const sibr::Vector3f custom_forward = _currentCamera.right().cross(worldUp);
 			const sibr::Vector3f translation_right = (_speedFpsCam * move.x()) * _currentCamera.right();
 
-			sibr::Vector3f translation = _speedFpsCam * (move.z() * custom_forward) + translation_right;;
+			sibr::Vector3f translation = _speedFpsCam * (move.z() * custom_forward) + translation_right;
+			//const float altitudeDiff = _goalAltitude - _currentCamera.position().z();
 			translation[2] = _goalAltitude - _currentCamera.position().z();
 
 			_currentCamera.translate(translation);

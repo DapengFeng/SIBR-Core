@@ -56,6 +56,11 @@ namespace sibr
 		void	playback( void );
 		
 		/**
+		Pause the playback. 
+		*/
+		void	pause(void);
+		
+		/**
 		Start recording a new camera stream, at a rate of one camera saved for each "use" call.
 		*/
 		void	record( void );
@@ -179,9 +184,14 @@ namespace sibr
 		bool isSaving() const { return _saving; }
 
 		/**
+		\return a boolean denoting if the recorder is currently paused.
+		*/
+		bool isPaused() const { return _paused; }
+
+		/**
 		\return A reference to the current stream of recorded cameras.
 		*/
-		std::vector<Camera>& cams() { return _cameras;  }
+		std::vector<Camera>& cams() { return _cameras; }
 		
 		/**
 		Updates the cameras from a vector, usefull to play already loaded path.
@@ -211,6 +221,8 @@ namespace sibr
 		*/
 		float & speed() { return _speed; }
 
+		sibr::Camera getCurrentCam();
+
 	private:
 		std::string				_dsPath; // path to dataset
 		ViewBase::Ptr			_view; // view to save images
@@ -219,6 +231,7 @@ namespace sibr
 		bool					_recording; ///< Are we currently recording.
 		bool					_playing; ///< Are we currently playing.
 		bool					_saving; ///< Are we saving the path as images.
+		bool					_paused; ///< Are we currently paused in a path.
 		std::string				_savingPath; ///< Destination base path for saved images.
 		bool					_savingVideo; ///< Are we saving the path as video.
 		std::string				_savingVideoPath; ///< Destination base path for saved video.

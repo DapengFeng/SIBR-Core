@@ -227,7 +227,7 @@ namespace sibr {
 
 	}
 
-	int	InteractiveCameraHandler::findNearestCamera(const std::vector<InputCamera::Ptr>& inputCameras) const
+	int	InteractiveCameraHandler::findNearestCamera(const std::vector<InputCamera::Ptr>& inputCameras, const bool& useRotation) const
 	{
 		if (inputCameras.size() == 0)
 			return -1;
@@ -236,15 +236,17 @@ namespace sibr {
 		int numCams = inputCameras.size();
 
 		std::vector<uint> sortByDistance = sibr::IBRBasicUtils::selectCamerasSimpleDist(inputCameras, _currentCamera, numCams);
-		std::vector<uint> sortByAngle = sibr::IBRBasicUtils::selectCamerasAngleWeight(inputCameras, _currentCamera, numCams);
 
 		std::map<uint, int> weights;
 		for (uint cam_id = 0; cam_id < sortByDistance.size(); cam_id++) {
 			weights[sortByDistance[cam_id]] = cam_id;
 		}
 
-		for (uint cam_id = 0; cam_id < sortByAngle.size(); cam_id++) {
-			weights[sortByAngle[cam_id]] += cam_id;
+		if (useRotation) {
+			std::vector<uint> sortByAngle = sibr::IBRBasicUtils::selectCamerasAngleWeight(inputCameras, _currentCamera, numCams);
+			for (uint cam_id = 0; cam_id < sortByAngle.size(); cam_id++) {
+				weights[sortByAngle[cam_id]] += cam_id;
+			}
 		}
 
 		std::multimap<int, uint> combinedWeight;
@@ -326,7 +328,7 @@ namespace sibr {
 	void InteractiveCameraHandler::snapToCamera(const int i) {
 		if (_snapTop) {
 			if (!_interpPathTop.empty()) {
-				unsigned int nearestCam = (i == -1 ? findNearestCamera(_interpPathTop) : i);
+				unsigned int nearestCam = (i == -1 ? findNearestCamera(_interpPathTop, false) : i);
 				nearestCam = sibr::clamp(nearestCam, (unsigned int)(0), (unsigned int)(_interpPathTop.size() - 1));
 				fromCamera(*_interpPathTop[nearestCam], true, false);
 			}
@@ -338,6 +340,23 @@ namespace sibr {
 				fromCamera(*_interpPath[nearestCam], true, false);
 			}
 		}
+	}
+
+	float InteractiveCameraHandler::getInterpolatedHeight(const std::vector<InputCamera::Ptr>& inputCameras)
+	{
+		const uint numCams = inputCameras.size();
+		std::vector<uint> sortByDistance = sibr::IBRBasicUtils::selectCamerasSimpleDist(inputCameras, _currentCamera, numCams, true);
+		InputCamera::Ptr cam0 = _interpPathTop[sortByDistance[0]];
+		InputCamera::Ptr cam1 = _interpPathTop[sortByDistance[1]];
+
+		const float dist = (cam1->position() - cam0->position()).norm();
+		const float currentDist = (_currentCamera.position() - cam0->position()).norm();
+		const float dist0 = (_currentCamera.position() - cam0->position()).norm();
+		const float dist1 = (_currentCamera.position() - cam1->position()).norm();
+		const float t = dist1 / (dist0 + dist1);
+
+		const float height = t * cam0->position().z() + (1 - t) * cam1->position().z(); // (cam1->position().z() - cam0->position().z());
+		return height;
 	}
 
 	void InteractiveCameraHandler::setFPSCameraSpeed(const float speed) {
@@ -484,10 +503,17 @@ namespace sibr {
 				break;
 			case FPS:
 			default:
+
+				//if (_cameraRecorder.isPaused()) {
+				//	sibr::InputCamera idealCam(_cameraRecorder.getCurrentCam(), _viewport.finalWidth(), _viewport.finalHeight());
+				//	_fpsCamera.fromCamera(idealCam);
+				//}
+
 				if (_snapTop) {
-					auto id = findNearestCamera(_interpPathTop);
-					sibr::InputCamera::Ptr nearestCam = _interpPathTop[id];
-					_fpsCamera.setGoalAltitude(nearestCam->position().z());
+					//auto id = findNearestCamera(_interpPathTop, false);
+					//sibr::InputCamera::Ptr nearestCam = _interpPathTop[id];
+					//_fpsCamera.setGoalAltitude(nearestCam->position().z());
+					_fpsCamera.setGoalAltitude(getInterpolatedHeight(_interpPathTop));
 				}
 				else {
 					_fpsCamera.setGoalAltitude(-1.f);
@@ -497,6 +523,8 @@ namespace sibr {
 				if (_shouldSnap) {
 					_fpsCamera.snap(_interpPath);
 				}
+
+
 				_currentCamera = _fpsCamera.getCamera();
 				break;
 			}
@@ -568,7 +596,7 @@ namespace sibr {
 			ImGui::Separator();
 			if (ImGui::Button("Snap to closest")) {
 				if (_snapTop) {
-					_currentCamId = findNearestCamera(_interpPathTop);
+					_currentCamId = findNearestCamera(_interpPathTop, false);
 				}
 				else {
 					_currentCamId = findNearestCamera(_interpPath);
@@ -653,6 +681,20 @@ namespace sibr {
 					_cameraRecorder.playback();
 				}
 				ImGui::SameLine();
+				if (ImGui::Button("Resume pos")) {
+					if (_cameraRecorder.isPaused()) {
+						sibr::InputCamera lastRecordedCam(_cameraRecorder.getCurrentCam(), _viewport.finalWidth(), _viewport.finalHeight());
+						_fpsCamera.fromCamera(lastRecordedCam);
+					}
+				}
+
+				ImGui::SameLine();
+				if (ImGui::Button("Pause")) {
+					_cameraRecorder.pause();
+					sibr::InputCamera idealCam(_cameraRecorder.getCurrentCam(), _viewport.finalWidth(), _viewport.finalHeight());
+					_fpsCamera.fromCamera(idealCam);
+				}
+
 				if (ImGui::Button("Play (No Interp)")) {
 					_cameraRecorder.playback();
 					_cameraRecorder.playNoInterpolation(true);

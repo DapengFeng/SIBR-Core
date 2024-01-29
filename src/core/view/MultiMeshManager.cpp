@@ -212,6 +212,20 @@ namespace sibr {
 		return *this;
 	}
 
+	MeshData& MeshData::setScale(float s)
+	{
+		// TODO: insérer une instruction return ici
+		scale = s;
+		return *this;
+	}
+
+	MeshData& MeshData::setTransformation(sibr::Matrix4f& tr)
+	{
+		// TODO: insérer une instruction return ici
+		transformation = tr;
+		return *this;
+	}
+
 	MeshData & MeshData::setAlpha(float _alpha) {
 		alpha = _alpha;
 		return *this;
@@ -232,7 +246,9 @@ namespace sibr {
 
 	void ShaderAlphaMVP::setUniforms(const Camera & eye, const MeshData & data)
 	{
-		mvp.set(eye.viewproj()*data.transformation);
+		//scaledModel *= data.transformation;
+
+		mvp.set(eye.viewproj()* data.transformation);
 		alpha.set(data.alpha);
 	}
 
@@ -440,9 +456,9 @@ namespace sibr {
 
 	void MultiMeshManager::renderMeshes()
 	{
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		glBlendEquation(GL_FUNC_ADD);
+		//glEnable(GL_BLEND);
+		//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		//glBlendEquation(GL_FUNC_ADD);
 
 		for (const auto & mesh_data : list_meshes) {
 			if (!mesh_data.active) {
@@ -451,8 +467,8 @@ namespace sibr {
 
 			if (mesh_data.renderMode == Mesh::PointRenderMode) {
 				points_shader.render(camera_handler.getCamera(), mesh_data);
-			} else {
-				colored_mesh_shader.render(camera_handler.getCamera(), mesh_data);
+			} else {				
+				colored_mesh_shader.render(camera_handler.getCamera(), mesh_data);			
 			}
 
 			if (mesh_data.showNormals) {
@@ -465,7 +481,6 @@ namespace sibr {
 			}
 		}
 
-		glDisable(GL_BLEND);
 	}
 
 	void MultiMeshManager::list_mesh_onGUI()
