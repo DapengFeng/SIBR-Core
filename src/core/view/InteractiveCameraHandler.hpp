@@ -213,7 +213,7 @@ namespace sibr {
 
 		bool _shouldSmooth; ///< Motion smoothing.
 		bool _shouldSnap; ///< Currently snapping.
-		bool _snapTop; ///< Snap to Top cameras only.
+		bool _snapTop = true; ///< Snap to Top cameras only.
 
 		float _bottom_vp = 1.f;
 

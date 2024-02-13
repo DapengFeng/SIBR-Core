@@ -605,7 +605,7 @@ namespace sibr {
 			}
 
 			ImGui::SameLine();
-			ImGui::Checkbox("Snap to top", &_snapTop);
+			ImGui::Checkbox("Altitude interp", &_snapTop);
 
 			ImGui::SameLine();
 			if (ImGui::InputInt("Snap to", &_currentCamId, 1, 10)) {

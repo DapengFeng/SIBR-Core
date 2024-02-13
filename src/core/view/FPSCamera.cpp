@@ -41,8 +41,8 @@ namespace sibr {
 		_speedFpsCam = 1.0f;
 		_speedRotFpsCam = 1.0f;
 		_useAcceleration = true; */
-		_speedFpsCam = 0.3f;
-		_speedRotFpsCam = 1.0f;
+		_speedFpsCam = 4.0f;
+		_speedRotFpsCam = 1.5f;
 		_useAcceleration = false; 
 	}
 

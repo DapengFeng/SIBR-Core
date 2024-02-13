@@ -24,6 +24,7 @@
 # include "core/view/ViewBase.hpp"
 # include "core/scene/BasicIBRScene.hpp"
 # include "core/system/CommandLineArgs.hpp"
+
 # include <core/renderer/PointBasedRenderer.hpp>
 
 #include <core/view/MultiMeshManager.hpp>
@@ -210,6 +211,12 @@ namespace sibr
 		 */
 		void renderImage(const Camera & eye, const InputCamera & cam, uint tex2Darray_handle, int cam_id);
 
+		void renderImage(const Camera& eye, const InputCamera& cam, const RenderTargetRGBA32F::Ptr& rt);
+
+		void renderFromTex(const Camera& eye, const InputCamera& cam, uint tex2Darray_handle);
+
+		void updateImgRt(const InputCamera& cam, const sibr::ImageRGBA& img);
+
 		GLShader _shader2D;		///< Shader for the 2D separate case.
 		GLShader _shaderArray;  ///< Shader for the texture array case.
 		GLuniform<sibr::Matrix4f>	_mvp2D, _mvpArray; ///< MVP matrix.
@@ -217,10 +224,16 @@ namespace sibr
 		GLuniform<float>			_alphaArray = 1.0f; ///< Opacity.
 		GLuniform<int>				_sliceArray = 1; ///< Slice location (for the texture array case).
 		float						_alphaImage = 0.5f; ///< Opacity shared value.
+		RenderTargetRGBA32F::Ptr	_imgRt;
+		//bool						_forceAspectRatio = false;
 
 		float						_userCameraScaling = 3.f; ///< Camera scaling.
-		float						_pathScaling = 1.0f; ///< Camera scaling.
-		float						_lastPathScaling = 1.0f; ///< Camera scaling.
+		float						_pathScaling = 0.2f; ///< Camera scaling.
+		float						_lastPathScaling = 0.2f; ///< Camera scaling.
+		std::string					_imgToFetch = "";
+		uint						_imgTexHandle;
+		bool						_displayImg = false;
+		sibr::Texture2D<unsigned char, 4>* _imgTex = nullptr;
 	};
 
 	/** Scene viewer for IBR scenes with a proxy, cameras and input images. 
@@ -241,7 +254,7 @@ namespace sibr
 		 * \param camHandler a camera handler to display as a "user camera"
 		 * \param myArgs dataset arguments (needed to load/save the camera location)
 		 */
-		SceneDebugView(const IIBRScene::Ptr& scene, const InteractiveCameraHandler::Ptr & camHandler, const BasicDatasetArgs& myArgs);
+		SceneDebugView(const IIBRScene::Ptr& scene, const InteractiveCameraHandler::Ptr & camHandler, const BasicDatasetArgs& myArgs, const std::string img_path = "");
 
 		/** Constructor.
 		 * \param scene the scene to display
@@ -313,6 +326,10 @@ namespace sibr
 		*/
 		void  loadChunksData(const char* file);
 
+		void updateClosestCams();
+
+		void writeClosestCams();
+
 	protected:
 
 		/** Generate the GUI for the display options. */
@@ -342,10 +359,14 @@ namespace sibr
 		int								_renderingCam; ///< ID of the camera used for rendering
 		std::string						_currentChunk = "";
 		bool							_highlight_current_chunk;
+		std::string						_images_path;
+		int								_n_closest = 60;
 
+		std::vector<uint>				_ids_n_closest;
 		std::vector<Chunk> chunks;
 		Mesh::Ptr current_chunk_mesh = std::make_shared<Mesh>();
-
+		Mesh::Ptr close_cams = std::make_shared<Mesh>();
+		
 		Mesh::Ptr used_cams = std::make_shared<Mesh>();
 		Mesh::Ptr non_used_cams = std::make_shared<Mesh>();
 		Mesh::Ptr user_cam = std::make_shared<Mesh>();
