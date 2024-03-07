@@ -51,7 +51,7 @@ struct Chunk
 		return true;
 	}
 
-	sibr::Mesh::Ptr generateMesh()
+	sibr::Mesh::Ptr generateMesh(bool use_z = false)
 	{
 		const sibr::Vector3f d_extent = 0.5f * extent;
 		sibr::Vector3f origin = center - d_extent;
@@ -66,13 +66,13 @@ struct Chunk
 				sibr::Vector3f p1(
 					origin.x() + (j * extent.x()),
 					origin.y() + (i * extent.y()),
-					-50.0f
+					use_z ? origin.z() : -50.f
 				);
 
 				sibr::Vector3f p2(
 					origin.x() + (j * extent.x()),
 					origin.y() + (i * extent.y()),
-					50.0f
+					use_z ? origin.z() + extent.z() : 50.f
 				);
 
 				vertices[i * 2 + j] = p1;
@@ -330,6 +330,12 @@ namespace sibr
 
 		void writeClosestCams();
 
+		void generateChunks();
+
+		void createChunksMesh(bool use_z = false);
+
+		void writeChunks();
+
 	protected:
 
 		/** Generate the GUI for the display options. */
@@ -361,12 +367,21 @@ namespace sibr
 		bool							_highlight_current_chunk;
 		std::string						_images_path;
 		int								_n_closest = 60;
+		Vector3f						_m_bbox_sizes;
+		float							_m_bbox_scale = 1.f;
+		float							_m_bbox_scale_before = 1.f;
+		std::string						_chunks_generation = "generate chunks";
 
 		std::vector<uint>				_ids_n_closest;
 		std::vector<Chunk> chunks;
+		std::vector<Chunk> chunks_in_file;
+
 		Mesh::Ptr current_chunk_mesh = std::make_shared<Mesh>();
 		Mesh::Ptr close_cams = std::make_shared<Mesh>();
-		
+
+		Vector3f _created_chunks_sizes;
+		Vector3f _created_chunks_sizes_before;
+
 		Mesh::Ptr used_cams = std::make_shared<Mesh>();
 		Mesh::Ptr non_used_cams = std::make_shared<Mesh>();
 		Mesh::Ptr user_cam = std::make_shared<Mesh>();

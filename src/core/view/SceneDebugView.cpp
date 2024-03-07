@@ -282,8 +282,10 @@ namespace sibr
 	SceneDebugView::SceneDebugView(const IIBRScene::Ptr & scene, 
 		const InteractiveCameraHandler::Ptr & camHandler, const BasicDatasetArgs & myArgs, const std::string img_path)
 	{
+
 		initImageCamShaders();
 		setupLabelsManagerShader();
+		
 		const std::string chunksFile = myArgs.dataset_path.get() + "\\chunks.txt";
 	
 		_ids_n_closest = std::vector<uint>(0);
@@ -293,6 +295,7 @@ namespace sibr
 		}
 
 		_images_path = img_path;
+
 		_scene = scene;
 		_userCurrentCam = camHandler;
 
@@ -355,6 +358,21 @@ namespace sibr
 		scaled.scale(_userCameraScaling);
 		getMeshData("scene cam").setTransformation(scaled.matrix());
 
+		//test
+		const bool recompute_chunks = _created_chunks_sizes_before.x() != _created_chunks_sizes.x() ||
+			_created_chunks_sizes_before.y() != _created_chunks_sizes.y() || 
+			_created_chunks_sizes_before.z() != _created_chunks_sizes.z() ||
+			_m_bbox_scale != _m_bbox_scale_before;
+
+		if (_chunks_generation == "read chunks" && recompute_chunks) {
+			
+			generateChunks();
+			createChunksMesh(true);
+
+			_created_chunks_sizes_before = _created_chunks_sizes;
+			_m_bbox_scale_before = _m_bbox_scale;
+		}
+
 		//update current chunk (in which user camera is)
 		_currentChunk = "none";
 		removeMesh("current chunk");
@@ -366,7 +384,15 @@ namespace sibr
 				if (_highlight_current_chunk)
 				{
 					current_chunk_mesh.reset();
-					current_chunk_mesh = chunk.generateMesh();
+
+					if (_chunks_generation == "read chunks") {
+
+						current_chunk_mesh = chunk.generateMesh(true);
+					}
+					else {
+						current_chunk_mesh = chunk.generateMesh();
+					}
+
 					//current_chunk_mesh = std::make_shared<Mesh>();
 					addMeshAsLines("current chunk", current_chunk_mesh).setColor({ 1,0,0 });
 				}
@@ -466,7 +492,8 @@ namespace sibr
 			gui_options();
 			list_mesh_onGUI();
 			gui_cameras();
-			gui_chunks();
+			if(chunks.size() != 0)
+				gui_chunks();
 		}
 		ImGui::End();
 	}
@@ -507,7 +534,7 @@ namespace sibr
 
 	void SceneDebugView::loadChunksData(const char* file)
 	{
-		chunks.clear();
+		chunks_in_file.clear();
 		std::ifstream infile(file);
 
 		if (!infile.is_open())
@@ -524,7 +551,7 @@ namespace sibr
 			iss >> chunk.center.x() >> chunk.center.y() >> chunk.center.z();
 			iss >> chunk.extent.x() >> chunk.extent.y() >> chunk.extent.z();
 
-			chunks.push_back(chunk);
+			chunks_in_file.push_back(chunk);
 		}
 	}
 
@@ -580,6 +607,87 @@ namespace sibr
 		}
 
 		
+	}
+
+	void SceneDebugView::generateChunks()
+	{
+		chunks.clear();
+		chunks_mesh.reset();
+		chunks_mesh = std::make_shared<Mesh>();
+
+		const Vector3f scaled_sizes = _m_bbox_scale * _created_chunks_sizes;
+		const auto bbox = _scene->proxies()->proxyPtr()->getBoundingBox();
+		Vector3f start = _m_bbox_scale * bbox.corner(Eigen::AlignedBox3f::BottomLeft) +
+			0.5f * scaled_sizes;
+	
+		Vector3i nb_chunks(
+			floor(_m_bbox_scale * _m_bbox_sizes.x() / scaled_sizes.x()),
+			floor(_m_bbox_scale * _m_bbox_sizes.y() / scaled_sizes.y()),
+			floor(_m_bbox_scale * _m_bbox_sizes.z() / scaled_sizes.z())
+		);
+
+		// Make sure generated chunks are never smaller than the boundingbox
+		for (int32_t i = 0; i < 2; i++) {
+			if ((nb_chunks[i] * scaled_sizes[i]) < (_m_bbox_scale * _m_bbox_sizes[i])) {
+				nb_chunks[i] += 1;
+				start[i] -= 0.5f * ((nb_chunks[i] * scaled_sizes[i]) - (_m_bbox_scale * _m_bbox_sizes[i]));
+			}
+		}
+
+		//start.x() -= 0.5f * (scaled_sizes.x() - fmod((_m_bbox_scale * _m_bbox_sizes.x()), scaled_sizes.x()));
+		//start.y() -= 0.5f * (scaled_sizes.y() - fmod((_m_bbox_scale * _m_bbox_sizes.y()), scaled_sizes.y()));
+		//fmod((_m_bbox_scale * _m_bbox_sizes.x()), scaled_sizes.x())
+	
+		for (int32_t i = 0; i < nb_chunks.x(); i++) {
+			const float x_offset = i * scaled_sizes.x();
+
+			for (int32_t j = 0; j < nb_chunks.y(); j++) {
+				const float y_offset = j * scaled_sizes.y();
+
+				for (int32_t k = 0; k < nb_chunks.z(); k++) {
+					const float z_offset = k * scaled_sizes.z();
+
+					Chunk chunk;
+					chunk.extent = scaled_sizes;
+					chunk.center = start + Vector3f(x_offset, y_offset, z_offset);
+					chunk.name = std::to_string(i) + "_" + std::to_string(j) + "_" + std::to_string(k);
+					chunks.push_back(chunk);
+				}
+			}
+		}
+	}
+
+	void SceneDebugView::createChunksMesh(bool use_z)
+	{
+		removeMesh("chunks");
+		if (chunks.size() != 0) {
+			for (Chunk chunk : chunks) {
+				chunks_mesh->merge(*chunk.generateMesh(use_z));
+			}
+
+			addMeshAsLines("chunks", chunks_mesh).setColor({ 0, 0.5f, 0.3f });
+		}
+	}
+
+	void SceneDebugView::writeChunks()
+	{
+		std::ofstream dump_file;
+		dump_file.open("../chunks.txt");
+		if (dump_file.is_open()) {
+
+			for (Chunk chunk : chunks) {
+				dump_file << chunk.name << " "
+					<< chunk.center.x() << " "
+					<< chunk.center.y() <<" "
+					<< chunk.center.z() << " " 
+					<< chunk.extent.x() << " " 
+					<< chunk.extent.y() << " "
+					<< chunk.extent.z() << " " << std::endl;
+			}
+
+			std::cout << "chunk file has been written ..." << std::endl;
+			dump_file.close();
+		}
 	}
 
 	void SceneDebugView::gui_options()
@@ -774,8 +882,35 @@ namespace sibr
 			ImGui::Text("User camera in chunk %s", _currentChunk);
 			ImGui::Checkbox("Highlight current chunk ", &_highlight_current_chunk);
 
+			ImGui::SameLine();
+			if (ImGui::Button(_chunks_generation.c_str())) {
+				if(_chunks_generation == "generate chunks") {
+					_chunks_generation = "read chunks";
+				}
+				else {
+					_chunks_generation = "generate chunks";
+					chunks = chunks_in_file;
+					chunks_mesh.reset();
+					chunks_mesh = std::make_shared<Mesh>();
+					createChunksMesh();
+				}
+			}
+
+			if (_chunks_generation == "read chunks") {
+				ImGui::SliderFloat("bbox scale", &_m_bbox_scale, 0, 1.f);
+
+				ImGui::SliderFloat("size x", &_created_chunks_sizes.x(), 0, _m_bbox_sizes.x());
+				ImGui::SliderFloat("size y", &_created_chunks_sizes.y(), 0, _m_bbox_sizes.y());
+				ImGui::SliderFloat("size z", &_created_chunks_sizes.z(), 0, _m_bbox_sizes.z());
+
+				if (ImGui::Button("Save chunks")) {
+					writeChunks();
+					std::cout << "Chunks file saved in install dir."<<std::endl;
+				}
+			}
+
 			// 0 name | 1 active
-			ImGui::Columns(2, "chunk options");
+			ImGui::Columns(3, "chunk info");
 
 			//ImGui::SetColumnWidth(4, 50);
 			ImGui::Separator();
@@ -783,24 +918,32 @@ namespace sibr
 
 			ImGui::NextColumn();
 
-			//ImGui::NextColumn();
-
-			if (ImGui::Button("Display##Chunks")) {
-				for (Chunk& chunk : chunks) {
-					chunk.display = !chunk.display;
-				}
-			}
+			ImGui::Text("center");
 
 			ImGui::Separator();
 			ImGui::NextColumn();
 
+			ImGui::Text("extents");
+
+			ImGui::NextColumn();
+
+
 			for (Chunk& chunk : chunks) {
 				ImGui::Selectable(chunk.name.c_str());
-				ImGui::NextColumn();
-				ImGui::Checkbox(("##Display_" + chunk.name).c_str(), &chunk.display);
+				
 				ImGui::NextColumn();
 
+				std::string center_str = std::to_string(chunk.center.x()) + " " + std::to_string(chunk.center.y()) + " " + std::to_string(chunk.center.z());
+				ImGui::Text(center_str.c_str());
 				ImGui::Separator();
+
+				ImGui::NextColumn();
+				std::string extent_str = std::to_string(chunk.extent.x()) + " " + std::to_string(chunk.extent.y()) + " " + std::to_string(chunk.extent.z());
+				ImGui::Text(extent_str.c_str());
+
+				ImGui::Separator();
+				ImGui::NextColumn();
+				//ImGui::Separator();
 			}
 
 			ImGui::Columns(1);
@@ -901,6 +1044,7 @@ namespace sibr
 			.setDepthTest(false).setColorMode(MeshData::ColorMode::VERTEX);
 
 		// generate and add chunks meshes (wireframes)
+		chunks = chunks_in_file;
 		if (chunks.size() != 0) {
 			for (Chunk chunk : chunks) {
 				chunks_mesh->merge(*chunk.generateMesh());
@@ -908,6 +1052,13 @@ namespace sibr
 
 			addMeshAsLines("chunks", chunks_mesh).setColor({ 0, 0.5f, 0.3f });
 		}
+
+		// Set default generated chunks sizes
+		const Vector3f sizes = _scene->proxies()->proxyPtr()->getBoundingBox().sizes();
+		_created_chunks_sizes = sizes / 2.f;
+		_created_chunks_sizes_before = Vector3f(0, 0, 0);
+
+		_m_bbox_sizes = _scene->proxies()->proxyPtr()->getBoundingBox().sizes();
 	}
 
 } // namespace
