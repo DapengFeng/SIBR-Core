@@ -59,7 +59,7 @@ namespace sibr
         int m_vrExperience = 0;                                  ///< 0: free world standing experience, 1: seated experience
         bool m_flipY = true;                                     ///< Rotate camera to render scenes which are y-inverted
         bool m_appFocused = false;                               ///< Application is visible and focused in the headset)
-        int m_downscaleResolution = 1.0f;                        ///< Downscale rendering resolution to improve performance
+        int m_downscaleResolution = 1;                           ///< Downscale rendering resolution to improve performance
         RenderTarget::UPtr _leftRT, _rightRT;                    ///< Only used to implement abstract method lRT andrRT!
 
         SwapchainImageRenderTarget::Ptr getRenderTarget(uint32_t texture, uint w, uint h);

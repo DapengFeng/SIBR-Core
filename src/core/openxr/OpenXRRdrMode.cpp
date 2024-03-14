@@ -46,7 +46,9 @@ namespace sibr
                           sibr::loadFile(sibr::Resources::Instance()->getResourceFilePathName("texture.fp")));
 
         m_openxrHmd = std::make_unique<OpenXRHMD>("Gaussian splatting");
-        m_openxrHmd->init();
+        if (!m_openxrHmd->init()) {
+            SIBR_ERR << "Failed to connect to OpenXR" << std::endl;
+        }
 
         bool sessionCreated = false;
 #if defined(XR_USE_PLATFORM_XLIB)
@@ -158,14 +160,14 @@ namespace sibr
                                      // Draw the left and right textures into the UI window
                                      if (optDest)
                                      {
-                                         glViewport(eye == OpenXRHMD::Eye::LEFT ? 0.f : optDest->w() / 2.f, 0, optDest->w() / 2.f, optDest->h());
-                                         glScissor(eye == OpenXRHMD::Eye::LEFT ? 0.f : optDest->w() / 2.f, 0, optDest->w() / 2.f, optDest->h());
+                                         glViewport(eye == OpenXRHMD::Eye::LEFT ? 0 : optDest->w() / 2, 0, optDest->w() / 2, optDest->h());
+                                         glScissor(eye == OpenXRHMD::Eye::LEFT ? 0 : optDest->w() / 2, 0, optDest->w() / 2, optDest->h());
                                          optDest->bind();
                                      }
                                      else
                                      {
-                                         glViewport(eye == OpenXRHMD::Eye::LEFT ? 0.f : w / 2.f, 0, w / 2.f, h);
-                                         glScissor(eye == OpenXRHMD::Eye::LEFT ? 0.f : w / 2.f, 0, w / 2.f, h);
+                                         glViewport(eye == OpenXRHMD::Eye::LEFT ? 0 : w / 2, 0, w / 2, h);
+                                         glScissor(eye == OpenXRHMD::Eye::LEFT ? 0 : w / 2, 0, w / 2, h);
                                      }
                                      glEnable(GL_SCISSOR_TEST);
                                      glDisable(GL_BLEND);
@@ -213,7 +215,7 @@ namespace sibr
 			ImGui::SliderInt("Down scale factor", &m_downscaleResolution, 1, 8);
             const auto leftPos = this->m_openxrHmd->getPosePosition(OpenXRHMD::Eye::LEFT);
             const auto rightPos = this->m_openxrHmd->getPosePosition(OpenXRHMD::Eye::RIGHT);
-            const float eyeDist = sqrt(pow(leftPos.x() - rightPos.x(), 2) + pow(leftPos.y() - rightPos.y(), 2) + pow(leftPos.z() - rightPos.z(), 2));
+            const float eyeDist = sqrt(powf(leftPos.x() - rightPos.x(), 2) + powf(leftPos.y() - rightPos.y(), 2) + powf(leftPos.z() - rightPos.z(), 2));
             ImGui::Text("IPD: %.1fcm", eyeDist * 100.f);
             if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenOverlapped))
             {

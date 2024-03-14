@@ -274,7 +274,7 @@ namespace sibr
         /**
          * @brief Return the runtime name
          */
-        const std::string &getRuntimeName() const
+        inline const std::string &getRuntimeName() const
         {
             return m_runtimeName;
         }
@@ -282,7 +282,7 @@ namespace sibr
         /**
          * @brief Return the runtime version
          */
-        const std::string &getRuntimeVersion() const
+        inline const std::string &getRuntimeVersion() const
         {
             return m_runtimeVersion;
         }
@@ -360,7 +360,7 @@ namespace sibr
         std::function<void()> m_focusedCallback;
 
         // Internal methods
-        bool createSession(const XrSessionCreateInfo &m_sessionCreateInfo);
+        bool createSession(const XrSessionCreateInfo &sessionCreateInfo);
         bool createReferenceSpace();
         bool createSwapchain();
         bool synchronizeSession();
