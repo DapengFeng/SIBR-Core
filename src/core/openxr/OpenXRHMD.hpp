@@ -56,6 +56,8 @@
 #include <openxr/openxr.h>
 #include <openxr/openxr_platform.h>
 
+#include <core/openxr/OpenXRInput.hpp>
+
 using namespace Eigen;
 
 namespace sibr
@@ -232,10 +234,28 @@ namespace sibr
         Eigen::Quaternionf getPoseQuaternion(Eye eye) const;
 
         /**
-         * @brief Return the position of the eye pose (in OpenXR world coordinates - +x is right, +y is down, +z is backward)
+         * @brief Return the position of the eye pose
          * @param eye: LEFT or RIGHT
          */
         Eigen::Vector3f getPosePosition(Eye eye) const;
+
+        /**
+         * @brief Return the position of the head pose - center between eyes
+         */
+        Eigen::Vector3f getHeadPosePosition() const;
+
+        /**
+         * @brief Return the yaw, roll, pich of the eye pose
+         * @param eye: LEFT or RIGHT
+         * @param unit: RADIAN or DEGREE (RADIAN by default)
+         */
+        Eigen::Vector3f getHeadPoseOrientation(AngleUnit unit = AngleUnit::RADIAN) const;
+
+        /**
+         * @brief Return the quaternion of the eye pose
+         * @param eye: LEFT or RIGHT
+         */
+        Eigen::Quaternionf getHeadPoseQuaternion() const;
 
         /**
          * @brief Return the fields of view of each eye
@@ -263,6 +283,11 @@ namespace sibr
         Eigen::Vector2f getScreenCenter(Eye eye) const;
 
         /**
+         * @brief Return the Inter-Pupillary distance between the two eyes
+         */
+        float getInterPupillaryDistance() const;
+
+        /**
          * @brief Return the current reference space type
          * Possible values are:
          * - VIEW: Head-view locked
@@ -270,6 +295,13 @@ namespace sibr
          * - STAGE: Room-scale
          */
         const char *getReferenceSpaceType() const;
+
+        /**
+         * @brief Return the play space bounds
+         *
+         * Bounds represent the play rectangle around origin position
+         */
+        Eigen::Vector2f getPlaySpaceBounds() const;
 
         /**
          * @brief Return the runtime name
@@ -285,6 +317,13 @@ namespace sibr
         inline const std::string &getRuntimeVersion() const
         {
             return m_runtimeVersion;
+        }
+
+        inline OpenXRInput* input() const {
+            if (m_xrInput) {
+                return m_xrInput.get();
+            }
+            return nullptr;
         }
 
     private:
@@ -314,6 +353,8 @@ namespace sibr
 
         // The play space instance
         XrSpace m_playSpace = XR_NULL_HANDLE;
+        // The play space bounds
+        XrExtent2Df m_playBounds;
         // The instance handle can be thought of as the basic connection to the OpenXR runtime
         XrInstance m_instance = XR_NULL_HANDLE;
         // The system represents an (opaque) set of XR devices in use, managed by the runtime
@@ -343,6 +384,8 @@ namespace sibr
         // Store info about frame submitting
         FrameRefreshReport m_lastFrameRefreshReport;
         FrameRefreshReport m_currentFrameRefreshReport;
+
+        std::unique_ptr<OpenXRInput> m_xrInput;
 
         // Runtime name and version
         std::string m_runtimeName = "";

@@ -180,6 +180,21 @@ namespace sibr
                         views[viewIndex].pose.position.z);
     }
 
+    Eigen::Quaternionf OpenXRHMD::getHeadPoseQuaternion() const
+    {
+        return getPoseQuaternion(Eye::LEFT);
+    }
+
+    Eigen::Vector3f OpenXRHMD::getHeadPoseOrientation(AngleUnit unit) const
+    {
+        return getPoseOrientation(Eye::LEFT);
+    }
+
+    Eigen::Vector3f OpenXRHMD::getHeadPosePosition() const
+    {
+        return (getPosePosition(Eye::LEFT) + getPosePosition(Eye::RIGHT)) / 2.f;
+    }
+
     Eigen::Vector4f OpenXRHMD::getFieldOfView(OpenXRHMD::Eye eye, AngleUnit unit) const
     {
         uint32_t viewIndex = eyeToViewIndex(eye);
@@ -233,6 +248,13 @@ namespace sibr
         float centerX = tanLeft / (tanLeft + tanRight);
         float centerY = tanDown / (tanDown + tanUp);
         return Vector2f(centerX, centerY);
+    }
+
+    float OpenXRHMD::getInterPupillaryDistance() const
+    {
+        const auto left = getPosePosition(Eye::LEFT);
+        const auto right = getPosePosition(Eye::RIGHT);
+        return sqrt(powf(left.x() - right.x(), 2) + powf(left.y() - right.y(), 2) + powf(left.z() - right.z(), 2));
     }
 
     bool OpenXRHMD::init()
@@ -383,7 +405,7 @@ namespace sibr
         return true;
     }
 
-    Vector2i OpenXRHMD::getRecommendedResolution() const
+    Eigen::Vector2i OpenXRHMD::getRecommendedResolution() const
     {
         return (m_viewCount > 0 ? Vector2i(m_viewConfigViews[0].recommendedImageRectWidth, m_viewConfigViews[0].recommendedImageRectHeight) : Vector2i::Zero());
     }
@@ -428,6 +450,8 @@ namespace sibr
             return false;
         }
 
+        m_xrInput = std::make_unique<OpenXRInput>(m_instance, m_session, m_playSpace);
+
         return synchronizeSession();
     }
 
@@ -460,7 +484,11 @@ namespace sibr
 
         XrResult result = xrCreateReferenceSpace(m_session, &m_playSpaceCreateInfo, &m_playSpace);
         if (!xrCheck(m_instance, result, "Failed to create play space!"))
+        {
             return false;
+        }
+        result = xrGetReferenceSpaceBoundsRect(m_session, m_playSpaceCreateInfo.referenceSpaceType, &m_playBounds);
+        xrCheck(m_instance, result, "Failed to retrieve play space bounds!");
 
         return true;
     }
@@ -810,11 +838,16 @@ namespace sibr
         if (!xrCheck(m_instance, result, "Could not locate views"))
             return false;
 
+        if(!m_xrInput->sync(m_lastFrameState.predictedDisplayTime)) {
+            return false;
+        }
         return true;
     }
 
     bool OpenXRHMD::closeSession()
     {
+        m_xrInput.reset();
+
         // If session is already idle, just destroy it
         if (m_status == SessionStatus::IDLE)
         {
@@ -1076,6 +1109,11 @@ namespace sibr
         default:
             return "UNKNOWN";
         }
+    }
+
+
+    Eigen::Vector2f OpenXRHMD::getPlaySpaceBounds() const {
+        return Eigen::Vector2f { m_playBounds.width, m_playBounds.height };
     }
 
 } /*namespace sibr*/
