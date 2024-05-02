@@ -247,20 +247,6 @@ sibr_addlibrary(
     MSVC11 "https://repo-sam.inria.fr/fungraph/dependencies/ibr-common/win3rdParty-MSVC15-splitted%20version/glfw-3.2.1.7z"
     MSVC14 "https://repo-sam.inria.fr/fungraph/dependencies/ibr-common/win3rdParty-MSVC15-splitted%20version/glfw-3.2.1.7z"     # TODO SV: provide a valid version if required
 )
-<<<<<<< Updated upstream:cmake/dependencies.cmake
-=======
-
-###################
-## Find OpenXR
-###################
-sibr_addlibrary(
-    NAME OpenXR
-    MSVC11 "https://repo-sam.inria.fr/fungraph/dependencies/sibr/~0.9/openxr_loader_windows-1.0.29.zip"
-    MSVC14 "https://repo-sam.inria.fr/fungraph/dependencies/sibr/~0.9/openxr_loader_windows-1.0.29.zip"
-    MSVC17 "https://repo-sam.inria.fr/fungraph/dependencies/sibr/~0.9/openxr_loader_windows-1.0.29.zip"
-)
-find_package(OpenXR REQUIRED)
->>>>>>> Stashed changes:cmake/windows/dependencies.cmake
 
 sibr_gitlibrary(TARGET imgui
     GIT_REPOSITORY 	"https://gitlab.inria.fr/sibr/libs/imgui.git"
