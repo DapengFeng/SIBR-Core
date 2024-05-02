@@ -35,6 +35,7 @@ struct Chunk
 	std::string name;
 	sibr::Vector3f center;
 	sibr::Vector3f extent;
+	bool selected = false;
 	bool display = true;
 
 	bool contains(const sibr::Vector3f& pos)
@@ -336,6 +337,8 @@ namespace sibr
 
 		void writeChunks();
 
+		void recomputeSelectedChunksMesh();
+
 	protected:
 
 		/** Generate the GUI for the display options. */
@@ -371,7 +374,9 @@ namespace sibr
 		float							_m_bbox_scale = 1.f;
 		float							_m_bbox_scale_before = 1.f;
 		std::string						_chunks_generation = "generate chunks";
-
+		bool							_lock_cam = false;
+		std::string						_lock_btn_label = "Lock cam";
+		bool							_dirty_selected_chunks_mesh = false;
 		std::vector<uint>				_ids_n_closest;
 		std::vector<Chunk> chunks;
 		std::vector<Chunk> chunks_in_file;
@@ -386,6 +391,8 @@ namespace sibr
 		Mesh::Ptr non_used_cams = std::make_shared<Mesh>();
 		Mesh::Ptr user_cam = std::make_shared<Mesh>();
 		Mesh::Ptr chunks_mesh = std::make_shared<Mesh>();
+		Mesh::Ptr selected_chunks_mesh = std::make_shared<Mesh>();
+
 	};
 
 } // namespace

@@ -295,7 +295,7 @@ namespace sibr
 		}
 
 		_images_path = img_path;
-
+		std::cout << "images_path: " << _images_path << std::endl;
 		_scene = scene;
 		_userCurrentCam = camHandler;
 
@@ -426,6 +426,18 @@ namespace sibr
 
 		if (input.key().isReleased(Key::T)) {
 			save();
+		}
+
+		// update locked cam
+		if (_lock_cam) {
+			sibr::Transform3f user_cam_transform = _userCurrentCam->getCamera().transform();
+			sibr::Transform3f top_cam_transform = sibr::Transform3f();
+			const float dist = (user_cam_transform.position() - camera_handler.getCamera().position()).norm();
+
+			top_cam_transform.translate(sibr::Vector3f(0, dist, 0));
+			top_cam_transform.rotate(sibr::Vector3f(-90, 0, 0));
+
+			camera_handler.fromTransform(sibr::Transform3f::computeFinal(user_cam_transform, top_cam_transform), false);
 		}
 	}
 
@@ -669,25 +681,41 @@ namespace sibr
 		}
 	}
 
+	// Write selected chunks only
 	void SceneDebugView::writeChunks()
 	{
 		std::ofstream dump_file;
 		dump_file.open("../chunks.txt");
 		if (dump_file.is_open()) {
+			dump_file << "## NAME CENTER(X,Y,Z) EXTENT(X,Y,Z)" << std::endl;
 
 			for (Chunk chunk : chunks) {
-				dump_file << chunk.name << " "
-					<< chunk.center.x() << " "
-					<< chunk.center.y() <<" "
-					<< chunk.center.z() << " " 
-					<< chunk.extent.x() << " " 
-					<< chunk.extent.y() << " "
-					<< chunk.extent.z() << " " << std::endl;
+				if (chunk.selected) {
+					dump_file << chunk.name << " "
+						<< chunk.center.x() << " "
+						<< chunk.center.y() << " "
+						<< chunk.center.z() << " " 
+						<< chunk.extent.x() << " " 
+						<< chunk.extent.y() << " "
+						<< chunk.extent.z() << " " << std::endl;
+				}
 			}
 
 			std::cout << "chunk file has been written ..." << std::endl;
 			dump_file.close();
 		}
+	}
+
+	void SceneDebugView::recomputeSelectedChunksMesh()
+	{
+		selected_chunks_mesh.reset();
+		selected_chunks_mesh = std::make_shared<Mesh>();
+		for (Chunk chunk : chunks) {
+			if(chunk.selected)
+				selected_chunks_mesh->merge(*chunk.generateMesh());
+		}
+
+		addMeshAsLines("selected_chunks", selected_chunks_mesh).setColor({ 0.9f, 0.9f, 0.f });
 	}
 
 	void SceneDebugView::gui_options()
@@ -703,6 +731,26 @@ namespace sibr
 			ImGui::InputFloat("User camera scale", &_userCameraScaling, 0.1f, 10.0f);
 			_pathScaling = std::max(0.001f, _pathScaling);
 			_userCameraScaling = std::max(0.001f, _userCameraScaling);
+			
+			// Camera locking to main view fps cam
+			if (ImGui::Button(_lock_btn_label.c_str())) {
+				_lock_cam = !_lock_cam;
+				if (_lock_cam) {
+					sibr::Transform3f user_cam_transform = _userCurrentCam->getCamera().transform();
+					sibr::Transform3f top_cam_transform = sibr::Transform3f();
+					const float dist = (user_cam_transform.position() - camera_handler.getCamera().position()).norm();
+					
+					top_cam_transform.translate(sibr::Vector3f(0, dist, 0));
+					top_cam_transform.rotate(sibr::Vector3f(-90, 0, 0));
+
+					camera_handler.fromTransform(sibr::Transform3f::computeFinal(user_cam_transform, top_cam_transform), false);
+
+					_lock_btn_label = "Unlock cam";
+				}
+				else {
+					_lock_btn_label = "Lock cam";
+				}
+			}
 
 			ImGui::Checkbox("Draw labels ", &_showLabels);
 			if (_showLabels) {
@@ -903,39 +951,60 @@ namespace sibr
 				ImGui::SliderFloat("size y", &_created_chunks_sizes.y(), 0, _m_bbox_sizes.y());
 				ImGui::SliderFloat("size z", &_created_chunks_sizes.z(), 0, _m_bbox_sizes.z());
 
-				if (ImGui::Button("Save chunks")) {
-					writeChunks();
-					std::cout << "Chunks file saved in install dir."<<std::endl;
-				}
 			}
 
-			// 0 name | 1 active
+			if (ImGui::Button("Save chunks")) {
+				writeChunks();
+				std::cout << "Chunks file saved in install dir."<<std::endl;
+			}
+
+			// 0 name | 1 center | 2 extents
 			ImGui::Columns(3, "chunk info");
 
 			//ImGui::SetColumnWidth(4, 50);
-			ImGui::Separator();
-			ImGui::Button("Chunk##Chunks");
+			if (ImGui::Button("Chunks")) {
+				for (Chunk& c : chunks)
+					c.selected = !c.selected;
+
+				recomputeSelectedChunksMesh();
+			}
+
+			ImGui::SameLine();
+
+			if (ImGui::Button("All")) {
+				for (Chunk& c : chunks)
+					c.selected = true;
+
+				recomputeSelectedChunksMesh();
+			}
+
 
 			ImGui::NextColumn();
 
-			ImGui::Text("center");
+			ImGui::Text("Center");
 
-			ImGui::Separator();
+			//ImGui::Separator();
 			ImGui::NextColumn();
 
-			ImGui::Text("extents");
+			ImGui::Text("Extents");
+			ImGui::Separator();
 
 			ImGui::NextColumn();
 
 
 			for (Chunk& chunk : chunks) {
+				
+				if (ImGui::Checkbox(("##" + chunk.name).c_str(), &chunk.selected)) {
+					recomputeSelectedChunksMesh();
+				}
+				ImGui::SameLine();
 				ImGui::Selectable(chunk.name.c_str());
 				
+
 				ImGui::NextColumn();
 
 				std::string center_str = std::to_string(chunk.center.x()) + " " + std::to_string(chunk.center.y()) + " " + std::to_string(chunk.center.z());
 				ImGui::Text(center_str.c_str());
-				ImGui::Separator();
 
 				ImGui::NextColumn();
 				std::string extent_str = std::to_string(chunk.extent.x()) + " " + std::to_string(chunk.extent.y()) + " " + std::to_string(chunk.extent.z());

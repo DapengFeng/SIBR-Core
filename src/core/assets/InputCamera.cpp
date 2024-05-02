@@ -1126,13 +1126,13 @@ namespace sibr
 			bytes
 				>> version;
 
-			if (version != SIBR_INPUTCAMERA_BINARYFILE_VERSION)
-			{
-				// Maybe the file format has been updated, or your binary file is not about InputCamera...
-				SIBR_ERR << "incorrect file format (version number does not correspond)." << std::endl;
+			//if (version != SIBR_INPUTCAMERA_BINARYFILE_VERSION)
+			//{
+			//	// Maybe the file format has been updated, or your binary file is not about InputCamera...
+			//	SIBR_ERR << "incorrect file format (version number does not correspond)." << std::endl;
 
-				return false;
-			}
+			//	return false;
+			//}
 
 			bytes
 				>> focal >> k1 >> k2 >> w >> h

@@ -165,6 +165,9 @@ namespace sibr
 
 		stream.saveToFile(filename);
 		SIBR_LOG << "[CameraRecorder] - Saved " << num << " cameras to " << filename << std::endl;
+		SIBR_LOG << "[CameraRecorder] - Saved " << num << " cameras to " << filename << " as colmap." << std::endl;
+
+		saveAsColmap(filename, _ow, _oh);
 	}
 
 	bool CameraRecorder::safeLoad(const std::string & filename, int w, int h)
