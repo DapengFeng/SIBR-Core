@@ -377,6 +377,8 @@ namespace sibr
 		bool							_lock_cam = false;
 		std::string						_lock_btn_label = "Lock cam";
 		bool							_dirty_selected_chunks_mesh = false;
+		bool							_dirty_chunks = false;
+
 		std::vector<uint>				_ids_n_closest;
 		std::vector<Chunk> chunks;
 		std::vector<Chunk> chunks_in_file;

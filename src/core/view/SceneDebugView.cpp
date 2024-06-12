@@ -290,14 +290,18 @@ namespace sibr
 	
 		_ids_n_closest = std::vector<uint>(0);
 
-		if (fileExists(chunksFile)) {
-			loadChunksData(chunksFile.c_str());
-		}
-
 		_images_path = img_path;
 		std::cout << "images_path: " << _images_path << std::endl;
 		_scene = scene;
 		_userCurrentCam = camHandler;
+		if (fileExists(chunksFile)) {
+			loadChunksData(chunksFile.c_str());
+		}
+		else {
+
+			generateChunks();
+		}
+
 
 		if (!_scene->cameras()->inputCameras().empty()) {
 			camera_handler.fromTransform(_scene->cameras()->inputCameras()[0]->transform(), true, false);
@@ -358,7 +362,7 @@ namespace sibr
 		scaled.scale(_userCameraScaling);
 		getMeshData("scene cam").setTransformation(scaled.matrix());
 
-		//test
+		//Recompute chunks when they get scaled
 		const bool recompute_chunks = _created_chunks_sizes_before.x() != _created_chunks_sizes.x() ||
 			_created_chunks_sizes_before.y() != _created_chunks_sizes.y() || 
 			_created_chunks_sizes_before.z() != _created_chunks_sizes.z() ||
@@ -368,6 +372,7 @@ namespace sibr
 			
 			generateChunks();
 			createChunksMesh(true);
+			recomputeSelectedChunksMesh();
 
 			_created_chunks_sizes_before = _created_chunks_sizes;
 			_m_bbox_scale_before = _m_bbox_scale;
@@ -504,8 +509,8 @@ namespace sibr
 			gui_options();
 			list_mesh_onGUI();
 			gui_cameras();
-			if(chunks.size() != 0)
-				gui_chunks();
+			gui_chunks();
+			//if(chunks.size() != 0)
 		}
 		ImGui::End();
 	}
@@ -623,6 +628,7 @@ namespace sibr
 
 	void SceneDebugView::generateChunks()
 	{
+
 		chunks.clear();
 		chunks_mesh.reset();
 		chunks_mesh = std::make_shared<Mesh>();
@@ -677,7 +683,7 @@ namespace sibr
 				chunks_mesh->merge(*chunk.generateMesh(use_z));
 			}
 
-			addMeshAsLines("chunks", chunks_mesh).setColor({ 0, 0.5f, 0.3f });
+			addMeshAsLines("chunks", chunks_mesh).setColor({ 0, 0.5f, 0.3f }).setAlpha(0.2);
 		}
 	}
 
@@ -708,14 +714,16 @@ namespace sibr
 
 	void SceneDebugView::recomputeSelectedChunksMesh()
 	{
+		removeMesh("selected_chunks");
+
 		selected_chunks_mesh.reset();
 		selected_chunks_mesh = std::make_shared<Mesh>();
 		for (Chunk chunk : chunks) {
 			if(chunk.selected)
-				selected_chunks_mesh->merge(*chunk.generateMesh());
+				selected_chunks_mesh->merge(*chunk.generateMesh(true));
 		}
 
-		addMeshAsLines("selected_chunks", selected_chunks_mesh).setColor({ 0.9f, 0.9f, 0.f });
+		addMeshAsLines("selected_chunks", selected_chunks_mesh).setColor({ 0.9f, 0.9f, 0.f }).setAlpha(1.);
 	}
 
 	void SceneDebugView::gui_options()
