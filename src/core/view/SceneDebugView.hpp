@@ -335,8 +335,6 @@ namespace sibr
 
 		void createChunksMesh(bool use_z = false);
 
-		void writeChunks();
-
 		void recomputeSelectedChunksMesh();
 
 	protected:

@@ -297,11 +297,6 @@ namespace sibr
 		if (fileExists(chunksFile)) {
 			loadChunksData(chunksFile.c_str());
 		}
-		else {
-
-			generateChunks();
-		}
-
 
 		if (!_scene->cameras()->inputCameras().empty()) {
 			camera_handler.fromTransform(_scene->cameras()->inputCameras()[0]->transform(), true, false);
@@ -362,22 +357,6 @@ namespace sibr
 		scaled.scale(_userCameraScaling);
 		getMeshData("scene cam").setTransformation(scaled.matrix());
 
-		//Recompute chunks when they get scaled
-		const bool recompute_chunks = _created_chunks_sizes_before.x() != _created_chunks_sizes.x() ||
-			_created_chunks_sizes_before.y() != _created_chunks_sizes.y() || 
-			_created_chunks_sizes_before.z() != _created_chunks_sizes.z() ||
-			_m_bbox_scale != _m_bbox_scale_before;
-
-		if (_chunks_generation == "read chunks" && recompute_chunks) {
-			
-			generateChunks();
-			createChunksMesh(true);
-			recomputeSelectedChunksMesh();
-
-			_created_chunks_sizes_before = _created_chunks_sizes;
-			_m_bbox_scale_before = _m_bbox_scale;
-		}
-
 		//update current chunk (in which user camera is)
 		_currentChunk = "none";
 		removeMesh("current chunk");
@@ -389,14 +368,8 @@ namespace sibr
 				if (_highlight_current_chunk)
 				{
 					current_chunk_mesh.reset();
-
-					if (_chunks_generation == "read chunks") {
-
-						current_chunk_mesh = chunk.generateMesh(true);
-					}
-					else {
-						current_chunk_mesh = chunk.generateMesh();
-					}
+					current_chunk_mesh = chunk.generateMesh();
+	
 
 					//current_chunk_mesh = std::make_shared<Mesh>();
 					addMeshAsLines("current chunk", current_chunk_mesh).setColor({ 1,0,0 });
@@ -479,21 +452,6 @@ namespace sibr
 			renderImage(camera_handler.getCamera(), _cameras[_cameraIdInfoGUI].cam, _imgRt);
 			glDisable(GL_BLEND);
 		}
-		//if (_scene && _showImages) {
-
-		//	int cam_id = 0;
-		//	for (const auto & camInfos : _cameras) {
-		//		if (camInfos.cam.isActive()) {
-		//			const auto & scene_rts = _scene->renderTargets();
-		//			if (scene_rts->getInputRGBTextureArrayPtr()) {
-		//				renderImage(camera_handler.getCamera(), camInfos.cam, scene_rts->getInputRGBTextureArrayPtr()->handle(), cam_id);
-		//			} else {
-		//				renderImage(camera_handler.getCamera(), camInfos.cam, scene_rts->inputImagesRT(), cam_id);
-		//			}
-		//		}
-		//		++cam_id;
-		//	}
-		//}
 
 		if (_showLabels) {
 			renderLabels(camera_handler.getCamera(), viewport, _cameras);
@@ -687,31 +645,6 @@ namespace sibr
 		}
 	}
 
-	// Write selected chunks only
-	void SceneDebugView::writeChunks()
-	{
-		std::ofstream dump_file;
-		dump_file.open("../chunks.txt");
-		if (dump_file.is_open()) {
-			dump_file << "## NAME CENTER(X,Y,Z) EXTENT(X,Y,Z)" << std::endl;
-
-			for (Chunk chunk : chunks) {
-				if (chunk.selected) {
-					dump_file << chunk.name << " "
-						<< chunk.center.x() << " "
-						<< chunk.center.y() << " "
-						<< chunk.center.z() << " " 
-						<< chunk.extent.x() << " " 
-						<< chunk.extent.y() << " "
-						<< chunk.extent.z() << " " << std::endl;
-				}
-			}
-
-			std::cout << "chunk file has been written ..." << std::endl;
-			dump_file.close();
-		}
-	}
-
 	void SceneDebugView::recomputeSelectedChunksMesh()
 	{
 		removeMesh("selected_chunks");
@@ -720,7 +653,7 @@ namespace sibr
 		selected_chunks_mesh = std::make_shared<Mesh>();
 		for (Chunk chunk : chunks) {
 			if(chunk.selected)
-				selected_chunks_mesh->merge(*chunk.generateMesh(true));
+				selected_chunks_mesh->merge(*chunk.generateMesh());
 		}
 
 		addMeshAsLines("selected_chunks", selected_chunks_mesh).setColor({ 0.9f, 0.9f, 0.f }).setAlpha(1.);
@@ -938,33 +871,6 @@ namespace sibr
 			ImGui::Text("User camera in chunk %s", _currentChunk);
 			ImGui::Checkbox("Highlight current chunk ", &_highlight_current_chunk);
 
-			ImGui::SameLine();
-			if (ImGui::Button(_chunks_generation.c_str())) {
-				if(_chunks_generation == "generate chunks") {
-					_chunks_generation = "read chunks";
-				}
-				else {
-					_chunks_generation = "generate chunks";
-					chunks = chunks_in_file;
-					chunks_mesh.reset();
-					chunks_mesh = std::make_shared<Mesh>();
-					createChunksMesh();
-				}
-			}
-
-			if (_chunks_generation == "read chunks") {
-				ImGui::SliderFloat("bbox scale", &_m_bbox_scale, 0, 1.f);
-
-				ImGui::SliderFloat("size x", &_created_chunks_sizes.x(), 0, _m_bbox_sizes.x());
-				ImGui::SliderFloat("size y", &_created_chunks_sizes.y(), 0, _m_bbox_sizes.y());
-				ImGui::SliderFloat("size z", &_created_chunks_sizes.z(), 0, _m_bbox_sizes.z());
-
-			}
-
-			if (ImGui::Button("Save chunks")) {
-				writeChunks();
-				std::cout << "Chunks file saved in install dir."<<std::endl;
-			}
 
 			// 0 name | 1 center | 2 extents
 			ImGui::Columns(3, "chunk info");
