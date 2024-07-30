@@ -91,6 +91,9 @@ namespace sibr {
 		bool _showSfM = false;
 
 		float _scalingModifier = 1.0f;
+		char* _items[2] = {"replaced", "original"};
+		int _selected_item = 0;
+		
 
 		std::atomic<bool> keep_running = true;
 
