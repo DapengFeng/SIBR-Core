@@ -153,7 +153,7 @@ Please see the documentation on how to create a dataset from your own scene, and
 
 Two VR experience modes are available:
 * **Free world standing:** you can walk freely in a rectangular play space
-* **Seated:** you can look around but not move within the space (the origin is world-locked)
+* **Seated:** you can look around but only move within the space with controllers (the origin is world-locked)
 
 You can enhance your VR experience by defining a starting camera position and re-aligning the scene through the following commands:
 

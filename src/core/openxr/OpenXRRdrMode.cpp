@@ -105,10 +105,10 @@ namespace sibr
             m_openxrHmd->input()->setStickMoveCallback(OpenXRInput::Hand::LEFT, [this](float x, float y) {
                 float step = 0.1f;
                 if (abs(x) > 0.5f) {
-                    m_vrConfig->camera().translate(m_vrConfig->camera().right() * x * step * m_controlSensitivity);
+                    m_vrConfig->camera().translate((m_vrConfig->camera().rotation() * m_headCameraInVrWorld.right()) * x * step * m_controlSensitivity);
                 }
                 if (abs(y) > 0.5f) {
-                    m_vrConfig->camera().translate(m_vrConfig->camera().dir() * y * step * m_controlSensitivity);
+                    m_vrConfig->camera().translate((m_vrConfig->camera().rotation() * m_headCameraInVrWorld.dir()) * y * step * m_controlSensitivity);
                 }
             });
             m_openxrHmd->input()->setStickMoveCallback(OpenXRInput::Hand::RIGHT, [this](float x, float y) {
@@ -119,7 +119,7 @@ namespace sibr
                 }
                 // Elevate/lower camera with right vertical stick
                 if (abs(y) > 0.5f) {
-                    m_vrConfig->camera().translate(m_vrConfig->camera().up() * y * step * m_controlSensitivity);
+                    m_vrConfig->camera().translate((m_vrConfig->camera().rotation() * m_headCameraInVrWorld.up()) * y * step * m_controlSensitivity);
                 }
             });
             // Move scene with left hand drag (position + trigger)
@@ -287,22 +287,22 @@ namespace sibr
                 ImGui::SameLine();
                 if (ImGui::Button("Left"))
                 {
-                    m_vrConfig->camera().translate(-m_vrConfig->camera().right() * m_controlSensitivity);
+                    m_vrConfig->camera().translate((m_vrConfig->camera().rotation() * m_headCameraInVrWorld.right() * 1.0f) * m_controlSensitivity);
                 }
                 ImGui::SameLine();
                 if (ImGui::Button("Right"))
                 {
-                    m_vrConfig->camera().translate(m_vrConfig->camera().right() * m_controlSensitivity);
+                    m_vrConfig->camera().translate((m_vrConfig->camera().rotation() * m_headCameraInVrWorld.right()) * m_controlSensitivity);
                 }
                 ImGui::SameLine();
                 if (ImGui::Button("Forward"))
                 {
-                    m_vrConfig->camera().translate(m_vrConfig->camera().dir() * m_controlSensitivity);
+                    m_vrConfig->camera().translate((m_vrConfig->camera().rotation() * m_headCameraInVrWorld.dir()) * m_controlSensitivity);
                 }
                 ImGui::SameLine();
                 if (ImGui::Button("Backward"))
                 {
-                    m_vrConfig->camera().translate(-m_vrConfig->camera().dir() * m_controlSensitivity);
+                    m_vrConfig->camera().translate((m_vrConfig->camera().rotation() * m_headCameraInVrWorld.dir() * 1.0f) * m_controlSensitivity);
                 }
                 ImGui::Text("Elevate/lower camera: Right vertical stick or");
                 ImGui::SameLine();
