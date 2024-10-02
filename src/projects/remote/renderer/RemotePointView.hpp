@@ -91,8 +91,10 @@ namespace sibr {
 		bool _showSfM = false;
 
 		float _scalingModifier = 1.0f;
-		char* _items[2] = {"replaced", "original"};
+		char* _render_type[2] = {"render", "depth"};
+		char* _gaussian_type[3] = {"replaced", "original", "background"};
 		int _selected_item = 0;
+		int _selected_item2 = 0;
 		
 
 		std::atomic<bool> keep_running = true;

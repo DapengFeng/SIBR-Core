@@ -28,6 +28,7 @@ constexpr char* jSHsPython = "shs_python";
 constexpr char* jRotScalePython = "rot_scale_python";
 constexpr char* jKeepAlive = "keep_alive";
 constexpr char* jRenderType = "render_type";
+constexpr char* jGaussianType = "gaussian_type";
 
 void sibr::RemotePointView::send_receive()
 {
@@ -67,7 +68,8 @@ void sibr::RemotePointView::send_receive()
 					sendData[jZFar] = _remoteInfo.zfar;
 					sendData[jZNear] = _remoteInfo.znear;
 					sendData[jKeepAlive] = _keepAlive ? 1 : 0;
-					sendData[jRenderType] = _items[_selected_item];
+					sendData[jRenderType] = _render_type[_selected_item];
+					sendData[jGaussianType] = _gaussian_type[_selected_item2];
 					sendData[jViewMat] = std::vector<float>((float*)&_remoteInfo.view, ((float*)&_remoteInfo.view) + 16);
 					sendData[jViewProjMat] = std::vector<float>((float*)&_remoteInfo.viewProj, ((float*)&_remoteInfo.viewProj) + 16);
 
@@ -199,7 +201,8 @@ void sibr::RemotePointView::onGUI()
 		ImGui::Checkbox("Rot-Scale Python", &_doRotScalePython);
 		ImGui::Checkbox("Keep model alive (after training)", &_keepAlive);
 		ImGui::SliderFloat("Scaling Modifier", &_scalingModifier, 0.001f, 1.0f);
-		ImGui::Combo("Render Type", &_selected_item, _items, IM_ARRAYSIZE(_items));
+		ImGui::Combo("Render Type", &_selected_item, _render_type, IM_ARRAYSIZE(_render_type));
+		ImGui::Combo("Gaussian Type", &_selected_item2, _gaussian_type, IM_ARRAYSIZE(_gaussian_type));
 	}
 	ImGui::End();
 }
