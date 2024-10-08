@@ -91,7 +91,7 @@ namespace sibr {
 		bool _showSfM = false;
 
 		float _scalingModifier = 1.0f;
-		char* _render_type[2] = {"render", "depth"};
+		char* _render_type[3] = {"render", "depth", "feature"};
 		char* _gaussian_type[3] = {"replaced", "original", "background"};
 		int _selected_item = 0;
 		int _selected_item2 = 0;
