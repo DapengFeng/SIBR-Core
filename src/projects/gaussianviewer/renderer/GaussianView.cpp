@@ -88,6 +88,9 @@ int loadPly(const char* filename,
 
 	std::string dummy;
 	std::getline(infile, buff);
+	if(strstr(buff.c_str(), "comment") != NULL) // meshio writes a comment when saving ply files.
+		std::getline(infile, buff);
+
 	std::stringstream ss(buff);
 	int count;
 	ss >> dummy >> dummy >> count;
